@@ -5,9 +5,10 @@
 ## Quick Start for Claude
 
 1. Read `.planning/progress.md` to see current status
-2. Review `.planning/decisions.md` for past architectural decisions
-3. Check `.research/` for any research findings relevant to current work
-4. Follow the conventions below when working on this project
+2. Review `.planning/decisions/INDEX.md` to find relevant architectural decisions
+3. Read specific decision files as needed from `.planning/decisions/`
+4. Check `.research/findings/INDEX.md` for research findings relevant to current work
+5. Follow the conventions below when working on this project
 
 ## Project Structure
 
@@ -16,11 +17,15 @@ project/
 ├── CLAUDE.md           # This file - guidelines for Claude
 ├── README.md           # Project overview and setup instructions
 ├── .research/          # Research findings, references, investigations
-│   ├── findings.md     # Key research discoveries
+│   ├── findings/       # Individual research finding files
+│   │   ├── INDEX.md    # Quick reference of all findings
+│   │   └── YYYY-MM-DD-topic.md
 │   └── references.md   # Links, papers, and external resources
 ├── .planning/          # Planning documents and decision logs
+│   ├── decisions/      # Individual decision files (ADRs)
+│   │   ├── INDEX.md    # Quick reference of all decisions
+│   │   └── YYYY-MM-DD-decision.md
 │   ├── progress.md     # Current status and next steps
-│   ├── decisions.md    # Architecture and design decisions
 │   └── roadmap.md      # High-level project roadmap
 ├── docs/               # User-facing documentation
 ├── src/                # Source code
@@ -30,9 +35,11 @@ project/
 ## Conventions
 
 ### File Organization
-- **Keep research separate from planning**: Research findings go in `.research/`, decisions based on that research go in `.planning/decisions.md`
+- **Keep research separate from planning**: Research findings go in `.research/findings/`, decisions based on that research go in `.planning/decisions/`
+- **One file per decision/finding**: Use individual files for scalability and selective reading
+- **Use date prefixes**: Name files as `YYYY-MM-DD-short-title.md` for chronological ordering
+- **Maintain INDEX files**: Update `.planning/decisions/INDEX.md` and `.research/findings/INDEX.md` when adding new files
 - **Progress tracking**: Always update `.planning/progress.md` at the end of each session
-- **Decision logging**: Document important decisions in `.planning/decisions.md` with date, context, decision, and rationale
 
 ### Documentation Standards
 - Use clear headers and bullet points
@@ -56,13 +63,15 @@ project/
 ### Starting a Session
 1. Read `.planning/progress.md`
 2. Check for any blockers or open questions
-3. Review relevant sections of `.planning/decisions.md`
-4. Continue from the "Next Steps" section
+3. Review `.planning/decisions/INDEX.md` to identify relevant decisions
+4. Read specific decision or finding files as needed
+5. Continue from the "Next Steps" section
 
 ### During a Session
 1. Use TodoWrite tool to track multi-step tasks
-2. Document new decisions in `.planning/decisions.md` as they're made
-3. Update research findings in `.research/` if discovering new information
+2. Document new decisions by creating files in `.planning/decisions/` and updating INDEX.md
+3. Document new research by creating files in `.research/findings/` and updating INDEX.md
+4. Only read the specific decision/finding files you need (don't read all of them)
 
 ### Ending a Session
 1. Update `.planning/progress.md`:
@@ -75,21 +84,90 @@ project/
 
 ## Decision Log Format
 
-When adding to `.planning/decisions.md`:
+When creating a new decision file in `.planning/decisions/`:
+
+1. Create file: `.planning/decisions/YYYY-MM-DD-short-title.md`
+2. Use this format:
 
 ```markdown
-## [YYYY-MM-DD] Decision Title
+# [Decision Title]
 
-**Context**: Why did this decision need to be made?
+**Date**: YYYY-MM-DD
+**Status**: [Proposed | Accepted | Deprecated | Superseded]
 
-**Decision**: What was decided?
+## Context
 
-**Rationale**: Why was this the best choice?
+Why does this decision need to be made? What's the background?
 
-**Alternatives Considered**: What other options were evaluated?
+## Decision
 
-**Consequences**: What are the implications of this decision?
+What are we doing?
+
+## Rationale
+
+Why is this the best choice?
+
+## Alternatives Considered
+
+What other options did we evaluate?
+
+- **Option 1**: Description
+  - Pros: ...
+  - Cons: ...
+
+## Consequences
+
+### Positive
+- Benefit 1
+
+### Negative
+- Trade-off 1
+
+## References
+
+- [Relevant link](URL)
+- Related decisions: [2026-01-15-other-decision.md](2026-01-15-other-decision.md)
 ```
+
+3. Update `.planning/decisions/INDEX.md` with a new row
+
+## Research Findings Format
+
+When creating a new research finding in `.research/findings/`:
+
+1. Create file: `.research/findings/YYYY-MM-DD-topic.md`
+2. Use this format:
+
+```markdown
+# [Research Topic]
+
+**Date**: YYYY-MM-DD
+**Researcher**: [Name or "Claude + User"]
+**Status**: [In Progress | Complete | Needs Follow-up]
+
+## Question/Goal
+
+What were we trying to understand or discover?
+
+## Key Findings
+
+### Finding 1: [Title]
+Description and why it matters.
+
+## Implications for Our Project
+
+How do these findings affect our decisions?
+
+## Recommendations
+
+Based on this research, what should we do?
+
+## Sources
+
+- [Source name](URL)
+```
+
+3. Update `.research/findings/INDEX.md` with a new row
 
 ## Progress Log Format
 

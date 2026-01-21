@@ -54,11 +54,15 @@ project/
 ├── CLAUDE.md           # Guidelines for Claude (read this first!)
 ├── README.md           # This file - project overview
 ├── .research/          # Research findings and references
-│   ├── findings.md     # Key discoveries
+│   ├── findings/       # Individual research finding files
+│   │   ├── INDEX.md    # Quick reference of all findings
+│   │   └── YYYY-MM-DD-topic.md
 │   └── references.md   # Links and resources
 ├── .planning/          # Planning and decision logs
+│   ├── decisions/      # Individual decision files (ADRs)
+│   │   ├── INDEX.md    # Quick reference of all decisions
+│   │   └── YYYY-MM-DD-decision.md
 │   ├── progress.md     # Current status (updated frequently)
-│   ├── decisions.md    # Architecture decisions
 │   └── roadmap.md      # High-level plan
 ├── docs/               # User-facing documentation
 ├── src/                # Source code
@@ -68,12 +72,14 @@ project/
 ## Workflow
 
 ### 1. Research Phase
-- Document findings in `.research/findings.md`
+- Document findings in `.research/findings/` (one file per topic)
+- Update `.research/findings/INDEX.md` with new entries
 - Collect references in `.research/references.md`
 - Update progress in `.planning/progress.md`
 
 ### 2. Planning Phase
-- Make architectural decisions, document in `.planning/decisions.md`
+- Make architectural decisions, create files in `.planning/decisions/`
+- Update `.planning/decisions/INDEX.md` with new entries
 - Create roadmap in `.planning/roadmap.md`
 - Continue updating progress
 
@@ -81,7 +87,7 @@ project/
 - Implement features in `src/`
 - Write tests in `tests/`
 - Document in `docs/`
-- Log important implementation decisions
+- Log important implementation decisions as new decision files
 - Keep progress.md current
 
 ### 4. Maintenance
@@ -109,15 +115,23 @@ The "source of truth" for current status:
 
 **Update this at the end of every session.**
 
-### .planning/decisions.md
+### .planning/decisions/
 Architecture Decision Records (ADRs):
-- Context for each decision
-- What was decided
-- Why it was decided
-- Alternatives considered
-- Consequences
+- Individual files for each decision (one per file)
+- INDEX.md provides quick reference
+- Named as `YYYY-MM-DD-short-title.md`
+- Contains context, decision, rationale, alternatives, consequences
 
-**Add entries whenever making significant technical choices.**
+**Create new files whenever making significant technical choices.**
+
+### .research/findings/
+Research documentation:
+- Individual files for each research topic (one per file)
+- INDEX.md provides quick reference
+- Named as `YYYY-MM-DD-topic.md`
+- Contains findings, implications, and recommendations
+
+**Create new files when documenting research discoveries.**
 
 ## Tips for Success
 
@@ -140,8 +154,9 @@ This template is a starting point. Feel free to:
 - **Version controlled**: All context lives with your code
 - **Searchable**: Use git history and grep to find past decisions
 - **Portable**: No external dependencies
-- **Scalable**: Works for small experiments or large projects
-- **AI-friendly**: Claude can read and update all documentation
+- **Scalable**: Individual files prevent context bloat; works for small experiments or large projects
+- **AI-friendly**: Claude can selectively read only relevant decisions/findings
+- **Efficient**: One file per decision/finding enables selective reading and better performance
 
 ---
 
