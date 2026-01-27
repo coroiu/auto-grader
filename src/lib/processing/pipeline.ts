@@ -24,7 +24,7 @@ export async function processPhoto(
 ): Promise<ProcessingResult> {
   const outputDir = getPhotoOutputDir(photoName);
   const processingMarkerPath = path.join(outputDir, config.processingMarker);
-  const tiffPath = path.join(outputDir, 'temp.tiff');
+  const tiffPath = path.join(outputDir, 'temp.tif');
 
   const result: ProcessingResult = {
     photoName,

@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY . .
@@ -27,9 +27,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libimage-exiftool-perl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
+# Create non-root user with home directory
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+    adduser --system --uid 1001 --home /home/nextjs nextjs && \
+    mkdir -p /home/nextjs/.config/darktable && \
+    chown -R nextjs:nodejs /home/nextjs
 
 # Copy built application
 COPY --from=builder /app/public ./public

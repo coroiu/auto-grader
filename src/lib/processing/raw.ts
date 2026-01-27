@@ -9,11 +9,20 @@ export async function convertRawToTiff(
   outputPath: string
 ): Promise<void> {
   return new Promise((resolve, reject) => {
+    // Use the output directory as a unique config directory per photo
+    // This prevents database lock conflicts when processing multiple photos concurrently
+    const configDir = path.dirname(outputPath);
+
     // darktable-cli <input> <output> [options]
     // Using 16-bit TIFF for maximum quality before LUT application
+    // --apply-custom-presets false is needed for concurrent instances
     const args = [
       rawPath,
       outputPath,
+      '--apply-custom-presets',
+      'false',
+      '--out-ext',
+      'tif',
       '--core',
       '--conf',
       'plugins/imageio/format/tiff/bpp=16',
@@ -21,8 +30,15 @@ export async function convertRawToTiff(
 
     console.log(`[RAW] Converting ${path.basename(rawPath)} to TIFF...`);
 
+    // Set DARKTABLE_CONFIGDIR to isolate each instance
+    const env = {
+      ...process.env,
+      DARKTABLE_CONFIGDIR: configDir,
+    };
+
     const proc = spawn('darktable-cli', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
+      env,
     });
 
     let stderr = '';

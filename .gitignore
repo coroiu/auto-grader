@@ -45,6 +45,9 @@ data/inbox/
 data/output/
 data/luts/
 
+# Example data (large binary files)
+example-data/
+
 # Keep data directory structure
 !data/.gitkeep
 
