@@ -34,18 +34,30 @@ export async function processPhoto(
   };
 
   try {
+    // Get current state BEFORE creating processing marker
+    // (otherwise getPhotoState returns early with all LUTs marked as missing)
+    const state = await getPhotoState(photoName);
+    const availableLuts = await getAvailableLuts();
+    const lutsToApply = onlyLuts || state.missingLuts;
+
+    // Check if there's actually work to do
+    if (state.isComplete) {
+      console.log(`[PIPELINE] Skipping ${photoName}: already complete`);
+      result.success = true;
+      return result;
+    }
+
     // Ensure output directory exists
     await fs.mkdir(outputDir, { recursive: true });
 
     // Create processing marker
     await fs.writeFile(processingMarkerPath, new Date().toISOString());
 
-    console.log(`[PIPELINE] Processing ${photoName}...`);
-
-    // Get current state to determine what needs to be done
-    const state = await getPhotoState(photoName);
-    const availableLuts = await getAvailableLuts();
-    const lutsToApply = onlyLuts || state.missingLuts;
+    console.log(
+      `[PIPELINE] Processing ${photoName}: ` +
+        `hasOriginal=${state.hasOriginal}, hasThumbnail=${state.hasThumbnail}, ` +
+        `appliedLuts=${state.appliedLuts.length}, missingLuts=${lutsToApply.length}`
+    );
 
     // Step 1: Extract metadata (if not already done)
     if (!state.hasMetadata) {

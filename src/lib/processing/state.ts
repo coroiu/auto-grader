@@ -301,6 +301,12 @@ export async function scanForPendingWork(): Promise<
 
       // If processing or has missing LUTs, add to pending
       if (!state.isComplete && !state.isProcessing) {
+        console.log(
+          `[STATE] ${photoName} needs processing: ` +
+            `isComplete=${state.isComplete}, hasOriginal=${state.hasOriginal}, ` +
+            `hasThumbnail=${state.hasThumbnail}, hasMetadata=${state.hasMetadata}, ` +
+            `appliedLuts=${state.appliedLuts.length}, missingLuts=${state.missingLuts.length}`
+        );
         pendingWork.push({
           photoName,
           rawPath,
