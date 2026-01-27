@@ -80,11 +80,8 @@ Auto Grader is a photography workflow automation tool that watches for new RAW f
 These items are not blockers but would improve reliability and UX:
 
 - [ ] Serialize or batch LUT application to avoid FFmpeg race conditions
-- [ ] Add WebSocket for real-time processing progress
 - [ ] Add retry logic for failed LUT applications
 - [ ] Improve stale marker cleanup during runtime
-- [ ] Add batch download functionality
-- [ ] Add photo deletion/cleanup UI
 
 ## Architecture Diagram
 
