@@ -151,13 +151,14 @@ export function PhotoComparison({ photo }: PhotoComparisonProps) {
           <div className="embla" ref={emblaRef}>
             <div className="embla__container">
               {selectedPhotos.map((variant) => (
-                <div key={variant.name} className="embla__slide">
-                  <div className="aspect-[3/2] relative bg-gray-900 rounded-lg overflow-hidden">
+                <div key={variant.name} className="embla__slide px-1">
+                  <div className="bg-gray-900 rounded-lg overflow-hidden">
                     <Image
                       src={variant.url}
                       alt={`${photo.name} - ${variant.name}`}
-                      fill
-                      className="object-contain"
+                      width={1200}
+                      height={1800}
+                      className="w-full h-auto"
                       sizes="100vw"
                       priority
                     />
