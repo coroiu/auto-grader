@@ -18,22 +18,21 @@ export function PhotoComparison({ photo }: PhotoComparisonProps) {
   const [selectedVariants, setSelectedVariants] = useState<string[]>(
     photo.variants.slice(0, 2).map((v) => v.name)
   );
-  const [hasHydrated, setHasHydrated] = useState(false);
+  const [initializedForMobile, setInitializedForMobile] = useState(false);
 
   // Embla carousel setup
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Update selection based on device after hydration
+  // Need to wait for isMobile to be accurate (after first client render)
   useEffect(() => {
-    if (!hasHydrated) {
-      setHasHydrated(true);
-      if (isMobile) {
-        // Mobile: select all variants by default
-        setSelectedVariants(photo.variants.map((v) => v.name));
-      }
+    if (isMobile && !initializedForMobile) {
+      // Mobile: select all variants by default
+      setSelectedVariants(photo.variants.map((v) => v.name));
+      setInitializedForMobile(true);
     }
-  }, [hasHydrated, isMobile, photo.variants]);
+  }, [isMobile, initializedForMobile, photo.variants]);
 
   // Track current slide in carousel
   const onSelect = useCallback(() => {
@@ -85,6 +84,21 @@ export function PhotoComparison({ photo }: PhotoComparisonProps) {
     }
   };
 
+  const deselectAll = () => {
+    // Keep only the first variant selected
+    setSelectedVariants([photo.variants[0].name]);
+    // Reset carousel to first slide
+    if (emblaApi) {
+      emblaApi.scrollTo(0);
+    }
+  };
+
+  const selectAll = () => {
+    setSelectedVariants(photo.variants.map((v) => v.name));
+  };
+
+  const allSelected = selectedVariants.length === photo.variants.length;
+
   const selectedPhotos = photo.variants.filter((v) =>
     selectedVariants.includes(v.name)
   );
@@ -116,6 +130,14 @@ export function PhotoComparison({ photo }: PhotoComparisonProps) {
             {variant.name}
           </button>
         ))}
+        {isMobile && (
+          <button
+            onClick={allSelected ? deselectAll : selectAll}
+            className="px-4 py-2 rounded-lg transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
+          >
+            {allSelected ? 'Deselect all' : 'Select all'}
+          </button>
+        )}
         {!isMobile && (
           <span className="self-center text-xs text-gray-500 ml-2">
             Shift+click for multi-select
