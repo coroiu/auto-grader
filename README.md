@@ -1,165 +1,121 @@
-# AI Project Template
+# Auto Grader
 
-A structured template for building projects with Claude from research through development, with built-in progress tracking and decision logging.
+A photography workflow automation tool that watches for RAW files, converts them, and applies multiple LUT grades automatically.
 
-## What This Template Provides
+## Features
 
-- **Organized structure** for research, planning, and development
-- **CLAUDE.md** - Guidelines for Claude to follow project conventions
-- **Progress tracking** - Keep context across sessions
-- **Decision logging** - Document architectural choices with rationale
-- **Research repository** - Collect findings and references
+- **Automatic file watching**: Monitors `/data/inbox` for new Sony ARW (RAW) files
+- **RAW conversion**: Uses darktable-cli to convert RAW to TIFF
+- **LUT grading**: Applies all `.cube` LUTs from `/data/luts` using FFmpeg
+- **Gallery UI**: Browse and compare graded outputs side-by-side
+- **Filesystem-based state**: No database required; state derived from file existence
+
+## Architecture
+
+```
+[FTP Upload] → [/data/inbox] → [File Watcher] → [Processing Queue]
+                                                        ↓
+                               [darktable-cli: ARW → TIFF]
+                                                        ↓
+                               [FFmpeg: TIFF + LUTs → JPGs]
+                                                        ↓
+[Gallery UI] ← [Next.js API] ← [Filesystem] ← [/data/output]
+```
 
 ## Quick Start
 
-### For New Projects
+### Prerequisites
 
-1. **Copy this template**:
-   ```bash
-   cp -r ai-project-template my-new-project
-   cd my-new-project
-   ```
+- Docker and Docker Compose
+- (Optional) Node.js 20+ for local development
 
-2. **Initialize git**:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit from AI project template"
-   ```
+### Running with Docker
 
-3. **Update the README** with your project details (replace this content)
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/auto-grader.git
+cd auto-grader
 
-4. **Start your first Claude session**:
-   - Tell Claude: "Read CLAUDE.md and help me get started"
-   - Define your project goals
-   - Begin research or planning phase
+# Create data directories
+mkdir -p data/{inbox,output,luts}
 
-### Working with Claude
+# Add some LUT files
+cp your-luts/*.cube data/luts/
 
-**Start of each session**:
-```
-Read CLAUDE.md and .planning/progress.md to catch up on the project
+# Start the application
+docker-compose up -d
+
+# Open http://localhost:3000
 ```
 
-Claude will then understand:
-- Where files are organized
-- What conventions to follow
-- Current project status
-- What to work on next
+### Local Development
 
-## Project Structure
+```bash
+# Install dependencies
+npm install
 
-```
-project/
-├── CLAUDE.md           # Guidelines for Claude (read this first!)
-├── README.md           # This file - project overview
-├── .research/          # Research findings and references
-│   ├── findings/       # Individual research finding files
-│   │   ├── INDEX.md    # Quick reference of all findings
-│   │   └── YYYY-MM-DD-topic.md
-│   └── references.md   # Links and resources
-├── .planning/          # Planning and decision logs
-│   ├── decisions/      # Individual decision files (ADRs)
-│   │   ├── INDEX.md    # Quick reference of all decisions
-│   │   └── YYYY-MM-DD-decision.md
-│   ├── progress.md     # Current status (updated frequently)
-│   └── roadmap.md      # High-level plan
-├── docs/               # User-facing documentation
-├── src/                # Source code
-└── tests/              # Test files
+# Start development server
+npm run dev
+
+# Open http://localhost:3000
 ```
 
-## Workflow
+## Usage
 
-### 1. Research Phase
-- Document findings in `.research/findings/` (one file per topic)
-- Update `.research/findings/INDEX.md` with new entries
-- Collect references in `.research/references.md`
-- Update progress in `.planning/progress.md`
+1. **Add LUTs**: Place `.cube` files in `/data/luts/`
+2. **Upload photos**: Drop ARW files in `/data/inbox/` (via FTP or manually)
+3. **Wait for processing**: Files are automatically converted and graded
+4. **Browse gallery**: Open http://localhost:3000 to view and compare results
 
-### 2. Planning Phase
-- Make architectural decisions, create files in `.planning/decisions/`
-- Update `.planning/decisions/INDEX.md` with new entries
-- Create roadmap in `.planning/roadmap.md`
-- Continue updating progress
+## Directory Structure
 
-### 3. Development Phase
-- Implement features in `src/`
-- Write tests in `tests/`
-- Document in `docs/`
-- Log important implementation decisions as new decision files
-- Keep progress.md current
+```
+/data/
+├── inbox/          # RAW files arrive here
+├── output/         # Processed outputs (organized by photo)
+│   └── DSC00123/   # Folder named after RAW file
+│       ├── .processing     # Marker: processing in progress
+│       ├── metadata.json   # Cached EXIF data
+│       ├── thumb.jpg       # Gallery thumbnail
+│       ├── original.jpg    # No LUT applied
+│       ├── cinematic.jpg   # Named after LUT file
+│       └── vintage.jpg     # Named after LUT file
+└── luts/           # .cube LUT files
+```
 
-### 4. Maintenance
-- All decisions and context are version controlled
-- Easy to onboard new collaborators (including Claude in new sessions)
-- Searchable history of why things were done certain ways
+## Configuration
 
-## Key Files
+Environment variables:
 
-### CLAUDE.md
-The most important file for AI collaboration. Contains:
-- Project structure explanation
-- Conventions to follow
-- Session workflow
-- Documentation standards
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATA_DIR` | `/data` | Base directory for data volumes |
+| `CONCURRENCY` | `2` | Number of parallel processing jobs |
+| `JPG_QUALITY` | `95` | JPEG output quality (1-100) |
 
-**Always direct Claude to read this file first.**
+## Tech Stack
 
-### .planning/progress.md
-The "source of truth" for current status:
-- What's completed
-- What's in progress
-- Next steps
-- Blockers
+- **Framework**: Next.js 14 (App Router)
+- **Styling**: Tailwind CSS
+- **RAW Processing**: darktable-cli
+- **LUT Application**: FFmpeg (lut3d filter)
+- **File Watching**: chokidar
+- **Job Queue**: p-queue
+- **Container**: Docker
 
-**Update this at the end of every session.**
+## Development
 
-### .planning/decisions/
-Architecture Decision Records (ADRs):
-- Individual files for each decision (one per file)
-- INDEX.md provides quick reference
-- Named as `YYYY-MM-DD-short-title.md`
-- Contains context, decision, rationale, alternatives, consequences
+```bash
+# Run linter
+npm run lint
 
-**Create new files whenever making significant technical choices.**
+# Type check
+npm run type-check
 
-### .research/findings/
-Research documentation:
-- Individual files for each research topic (one per file)
-- INDEX.md provides quick reference
-- Named as `YYYY-MM-DD-topic.md`
-- Contains findings, implications, and recommendations
+# Build for production
+npm run build
+```
 
-**Create new files when documenting research discoveries.**
+## License
 
-## Tips for Success
-
-1. **Build the habit**: Start each Claude session by having it read CLAUDE.md and progress.md
-2. **Keep progress current**: Update .planning/progress.md at the end of each session
-3. **Document decisions**: Don't let important choices go undocumented
-4. **Commit frequently**: Git history is your friend
-5. **Adapt as needed**: Modify conventions to fit your project's needs
-
-## Customization
-
-This template is a starting point. Feel free to:
-- Add project-specific sections to CLAUDE.md
-- Create additional files in `.planning/` or `.research/`
-- Adjust the directory structure for your needs
-- Add your own conventions
-
-## Why This Works
-
-- **Version controlled**: All context lives with your code
-- **Searchable**: Use git history and grep to find past decisions
-- **Portable**: No external dependencies
-- **Scalable**: Individual files prevent context bloat; works for small experiments or large projects
-- **AI-friendly**: Claude can selectively read only relevant decisions/findings
-- **Efficient**: One file per decision/finding enables selective reading and better performance
-
----
-
-## Working with Claude
-
-Claude: Start by reading `CLAUDE.md` for complete project guidelines and conventions.
+MIT

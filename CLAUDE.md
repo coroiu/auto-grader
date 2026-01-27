@@ -203,8 +203,73 @@ Based on this research, what should we do?
 
 ## Project-Specific Notes
 
-[Add any project-specific conventions, preferences, or context here as the project evolves]
+### Auto Grader Overview
 
----
+Auto Grader is a photography workflow automation tool that:
+1. Watches for new RAW files (Sony ARW) uploaded via FTP
+2. Converts RAW files using darktable-cli
+3. Applies LUTs (.cube files) to generate multiple graded JPGs per photo
+4. Provides a gallery UI to browse and compare graded outputs
 
-**Remember**: This template is a starting point. Adapt these conventions as you learn what works best for this specific project.
+### Key Architecture Decisions
+
+- **Single Docker container** - Worker runs in same process as Next.js
+- **Filesystem-based state** - No database; state derived from file existence
+- **p-queue** - In-memory job queue with filesystem crash recovery
+
+See `.planning/decisions/2026-01-27-auto-grader-architecture.md` for full details.
+
+### Directory Layout
+
+```
+src/
+├── app/                    # Next.js App Router pages and API routes
+├── components/             # React components
+└── lib/
+    └── processing/         # Core processing logic
+        ├── pipeline.ts     # Orchestrates RAW→TIFF→JPG workflow
+        ├── watcher.ts      # chokidar file watcher
+        ├── state.ts        # Filesystem state utilities
+        ├── raw.ts          # darktable-cli wrapper
+        └── lut.ts          # FFmpeg LUT application
+
+data/                       # Mounted volumes (gitignored)
+├── inbox/                  # RAW files arrive here
+├── output/                 # Graded JPGs (organized by photo)
+└── luts/                   # .cube files
+```
+
+### Processing State Detection
+
+```
+/data/output/DSC00123/
+├── .processing           # Marker: processing in progress
+├── metadata.json         # EXIF data
+├── thumb.jpg             # Gallery thumbnail
+├── original.jpg          # No LUT applied
+├── cinematic.jpg         # Named after LUT
+└── vintage.jpg           # Named after LUT
+```
+
+- Photo is **pending**: folder doesn't exist or `.processing` marker present
+- Photo is **complete**: folder exists with all expected JPGs
+- Photo needs **partial processing**: folder exists but missing some LUT outputs
+
+### Commands
+
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm run lint         # Run ESLint
+npm run type-check   # TypeScript check
+docker-compose up    # Run with Docker
+```
+
+### Testing Locally Without Docker
+
+For local development without Docker, you'll need:
+- darktable-cli installed (`brew install darktable` on macOS)
+- FFmpeg installed (`brew install ffmpeg`)
+- exiftool installed (`brew install exiftool`)
+
+Set `DATA_DIR=./data` in `.env.local` to use local data directory.

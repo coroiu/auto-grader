@@ -1,0 +1,16 @@
+services:
+  auto-grader:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data/inbox:/data/inbox
+      - ./data/output:/data/output
+      - ./data/luts:/data/luts
+    environment:
+      - DATA_DIR=/data
+      - CONCURRENCY=2
+      - JPG_QUALITY=95
+    restart: unless-stopped
