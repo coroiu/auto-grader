@@ -4,67 +4,65 @@
 
 ## Current Status
 
-All four implementation phases complete. The Auto Grader application is fully implemented with:
-- Next.js frontend and API
-- Docker container with darktable, FFmpeg, exiftool
-- File watching and processing pipeline
-- Gallery UI with comparison view
-- CI/CD pipeline
+Implementation complete and tested. The system successfully processes RAW photos, applies LUTs, and serves them via a gallery UI. Some reliability improvements needed for production use.
 
 ## Completed
 
 - [2026-01-21] Set up project structure with `.research/`, `.planning/`, `docs/`, and `src/` directories
 - [2026-01-21] Created CLAUDE.md with comprehensive guidelines for Claude collaboration
-- [2026-01-27] Created implementation plan for Auto Grader
-- [2026-01-27] **Phase 1: Foundation**
-  - Initialized Next.js 14 with TypeScript and Tailwind CSS
-  - Created Dockerfile with darktable, FFmpeg, exiftool
-  - Set up docker-compose with volume mounts
-  - Implemented file watcher (chokidar)
-  - Created filesystem state utilities
-  - Built processing pipeline (ARW → TIFF → JPG)
-- [2026-01-27] **Phase 2: LUT Processing**
-  - LUT scanning from `/data/luts` directory
+- [2026-01-27] **Phase 1: Foundation** - Complete
+  - Next.js 14 with TypeScript and Tailwind CSS
+  - Dockerfile with darktable, FFmpeg, exiftool
+  - docker-compose with volume mounts
+  - File watcher (chokidar)
+  - Filesystem state utilities
+- [2026-01-27] **Phase 2: LUT Processing** - Complete
+  - LUT scanning from `/data/luts`
   - FFmpeg lut3d filter integration
-  - N+1 outputs per photo (N LUTs + original)
-  - EXIF metadata extraction with exiftool
+  - EXIF metadata extraction
   - Thumbnail generation
-  - Error handling with `.processing` marker
-- [2026-01-27] **Phase 3: Gallery UI**
-  - API endpoints: /api/photos, /api/photos/[name], /api/status, /api/rescan
-  - Gallery grid component grouped by capture date
-  - Photo detail page with multi-variant comparison
-  - Processing status indicator with rescan button
-- [2026-01-27] **Phase 4: CI/CD**
-  - GitHub Actions workflow for lint, type-check, build
-  - Docker build and push to ghcr.io on main branch
+- [2026-01-27] **Phase 3: Gallery UI** - Complete
+  - API endpoints: /api/photos, /api/photos/[name], /api/status, /api/rescan, /api/health
+  - Gallery grid with date grouping
+  - Photo comparison view
+  - Status bar with rescan
+- [2026-01-27] **Phase 4: CI/CD** - Complete
+  - GitHub Actions workflow
+- [2026-01-27] **Testing** - Complete
+  - Tested with 12 RAW photos and 20 LUTs
+  - Verified concurrent processing
+  - Fixed darktable database lock issue
 
-## In Progress
+## Known Issues
 
-Nothing currently in progress.
+1. **LUT Race Condition**: Applying 20 LUTs in parallel causes some FFmpeg failures (exit code null) due to concurrent access to the same TIFF file. Most LUTs succeed, some fail.
+
+2. **Stale Processing Markers**: Photos that crash mid-processing leave `.processing` markers. The rescan API handles this, but automatic cleanup could be improved.
+
+## Recommended Improvements
+
+1. **Serialize LUT application** or use batches (e.g., 4 at a time) instead of all 20 in parallel
+2. **Add retry logic** for failed LUT applications
+3. **Copy TIFF per LUT** to avoid concurrent read issues
+4. **Add progress WebSocket** for real-time UI updates
+
+## Test Results
+
+With 12 RAW photos and 20 LUTs:
+- All 12 photos detected and queued
+- RAW → TIFF conversion: Working (with darktable isolation fix)
+- LUT application: 70-100% success rate per photo (race condition)
+- Gallery UI: Working, shows completed photos
+- API: All endpoints functional
 
 ## Next Steps
 
-1. Test the application end-to-end:
-   - Run `npm install` to install dependencies
-   - Run `npm run dev` for local development
-   - Or use `docker-compose up` for containerized testing
-2. Add sample LUT files to test processing
-3. Consider future enhancements:
-   - WebSocket for real-time processing status
-   - Batch download functionality
-   - Photo deletion/cleanup
-   - Custom darktable processing profiles
+For production readiness:
+1. Fix LUT concurrency (batch or serialize)
+2. Add WebSocket for progress updates
+3. Add retry logic for failed LUTs
+4. Consider reducing default CONCURRENCY to 1
 
-## Blockers
+## Architecture
 
-None.
-
-## Notes
-
-Key files:
-- `src/lib/processing/pipeline.ts` - Main processing orchestration
-- `src/lib/processing/watcher.ts` - File watcher with crash recovery
-- `src/lib/processing/state.ts` - Filesystem-based state management
-- `src/app/photos/[name]/page.tsx` - Photo comparison UI
-- `docker/Dockerfile` - Container with all tools installed
+See `.planning/decisions/2026-01-27-auto-grader-architecture.md` for full details.
