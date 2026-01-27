@@ -38,6 +38,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy sharp for image optimization in standalone mode
+COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
+COPY --from=builder /app/node_modules/@img ./node_modules/@img
+
 # Create data directories
 RUN mkdir -p /data/inbox /data/output /data/luts && \
     chown -R nextjs:nodejs /data
