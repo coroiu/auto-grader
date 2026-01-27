@@ -8,7 +8,8 @@
 2. Review `.planning/decisions/INDEX.md` to find relevant architectural decisions
 3. Read specific decision files as needed from `.planning/decisions/`
 4. Check `.research/findings/INDEX.md` for research findings relevant to current work
-5. Follow the conventions below when working on this project
+5. Regularly commit your changes to `git` with descriptive messages
+6. Follow the conventions below when working on this project
 
 ## Project Structure
 
