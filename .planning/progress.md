@@ -53,16 +53,22 @@ All four implementation phases complete. End-to-end testing successful with 12 R
 
 ## Known Issues
 
-1. **LUT Race Condition**: Running 20 FFmpeg processes in parallel on the same TIFF can cause some failures. Most LUTs succeed, some fail with exit code null.
+All major known issues have been addressed:
 
-2. **Stale Markers**: Photos that crash mid-processing leave `.processing` markers. Rescan API handles this, but could be improved.
+1. ~~**LUT Race Condition**~~: Fixed by serializing LUT application (sequential processing instead of parallel)
+
+2. ~~**Stale Markers**~~: Fixed with periodic cleanup during runtime (every 5 minutes, configurable)
+
+## Recent Improvements (2026-01-27)
+
+- **Serialized LUT Application**: Changed from parallel `Promise.all` to sequential processing to avoid FFmpeg race conditions
+- **Retry Logic**: Added exponential backoff retry (3 attempts by default, configurable via `LUT_RETRIES` and `LUT_RETRY_DELAY_MS`)
+- **Periodic Stale Marker Cleanup**: Added interval-based cleanup during runtime (configurable via `STALE_MARKER_CLEANUP_INTERVAL_MS`)
 
 ## Future Improvements
 
 See `.planning/roadmap.md` for full list. Key items:
-- Serialize or batch LUT application
 - Add WebSocket for real-time progress
-- Add retry logic for failed LUTs
 
 ## Quick Start
 

@@ -6,6 +6,7 @@ import { scanForPendingWork } from './state';
 import { cleanupStaleMarkers } from './pipeline';
 
 let watcher: chokidar.FSWatcher | null = null;
+let cleanupInterval: NodeJS.Timeout | null = null;
 
 /**
  * Start watching the inbox directory for new RAW files
@@ -71,12 +72,39 @@ export async function startWatcher(): Promise<void> {
   watcher.on('ready', () => {
     console.log('[WATCHER] Ready and watching for new files');
   });
+
+  // Start periodic stale marker cleanup
+  cleanupInterval = setInterval(async () => {
+    try {
+      const cleaned = await cleanupStaleMarkers();
+      if (cleaned.length > 0) {
+        console.log(
+          `[WATCHER] Periodic cleanup: removed ${cleaned.length} stale processing markers`
+        );
+      }
+    } catch (err) {
+      console.error(
+        '[WATCHER] Periodic cleanup error:',
+        err instanceof Error ? err.message : err
+      );
+    }
+  }, config.staleMarkerCleanupIntervalMs);
+
+  console.log(
+    `[WATCHER] Stale marker cleanup scheduled every ${config.staleMarkerCleanupIntervalMs / 1000}s`
+  );
 }
 
 /**
  * Stop the file watcher
  */
 export async function stopWatcher(): Promise<void> {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+    console.log('[WATCHER] Stale marker cleanup stopped');
+  }
+
   if (watcher) {
     await watcher.close();
     watcher = null;
