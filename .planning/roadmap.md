@@ -74,6 +74,25 @@ Auto Grader is a photography workflow automation tool that watches for new RAW f
 - [x] Phase 3: Gallery UI functional
 - [x] Phase 4: CI/CD pipeline active
 - [x] End-to-end testing with 12 photos and 20 LUTs
+- [x] Phase 5: Mobile carousel and desktop selection refinements
+
+### Phase 5: Mobile & Desktop UX Improvements
+**Status**: Complete
+
+**Goals**:
+- Improve mobile experience with touch-friendly navigation
+- Refine desktop interaction model for variant selection
+
+**Key Deliverables**:
+
+**Mobile**:
+- [x] Carousel view for selected variants (swipe between them instead of showing all simultaneously)
+- [x] All variants selected by default on mobile
+
+**Desktop**:
+- [x] Single-click replaces current selection (not additive)
+- [x] Shift+click to show multiple variants simultaneously
+- [x] Keep current behavior of not selecting all variants by default
 
 ## Future Improvements
 
@@ -110,4 +129,4 @@ These items are not blockers but would improve reliability and UX:
 
 ---
 
-**Last Updated**: 2026-01-27
+**Last Updated**: 2026-01-27 (Phase 5 complete)

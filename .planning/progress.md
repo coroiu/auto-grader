@@ -4,7 +4,7 @@
 
 ## Current Status
 
-All four implementation phases complete. End-to-end testing successful with 12 RAW photos and 20 LUTs. The system is functional and ready for use.
+Phases 1-5 complete and tested. Core functionality and UX improvements are all implemented.
 
 ## Completed
 
@@ -39,6 +39,13 @@ All four implementation phases complete. End-to-end testing successful with 12 R
   - Fixed darktable concurrent processing (DARKTABLE_CONFIGDIR isolation)
   - Verified file watching, queueing, and processing
   - Verified gallery UI and all API endpoints
+- [2026-01-27] **Phase 5: Mobile & Desktop UX**
+  - Mobile: Embla carousel for swiping through selected variants
+  - Mobile: All variants selected by default
+  - Desktop: Single-click replaces selection
+  - Desktop: Shift+click for multi-select (add/remove)
+  - Dot indicators for carousel navigation on mobile
+  - SSR-safe useMediaQuery hook for responsive detection
 
 ## Test Results
 
@@ -64,6 +71,10 @@ All major known issues have been addressed:
 - **Serialized LUT Application**: Changed from parallel `Promise.all` to sequential processing to avoid FFmpeg race conditions
 - **Retry Logic**: Added exponential backoff retry (3 attempts by default, configurable via `LUT_RETRIES` and `LUT_RETRY_DELAY_MS`)
 - **Periodic Stale Marker Cleanup**: Added interval-based cleanup during runtime (configurable via `STALE_MARKER_CLEANUP_INTERVAL_MS`)
+
+## In Progress
+
+None currently.
 
 ## Future Improvements
 
@@ -94,5 +105,7 @@ npm run dev
 | `src/lib/processing/state.ts` | Filesystem state management |
 | `src/lib/processing/lut.ts` | FFmpeg LUT application |
 | `src/app/photos/[name]/page.tsx` | Photo comparison UI |
+| `src/app/photos/[name]/PhotoComparison.tsx` | Carousel/grid comparison view |
+| `src/hooks/useMediaQuery.ts` | SSR-safe responsive detection |
 | `docker/Dockerfile` | Container with all tools |
 | `.github/workflows/ci.yml` | CI/CD pipeline |
