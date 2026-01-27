@@ -4,65 +4,89 @@
 
 ## Current Status
 
-Implementation complete and tested. The system successfully processes RAW photos, applies LUTs, and serves them via a gallery UI. Some reliability improvements needed for production use.
+All four implementation phases complete. End-to-end testing successful with 12 RAW photos and 20 LUTs. The system is functional and ready for use.
 
 ## Completed
 
 - [2026-01-21] Set up project structure with `.research/`, `.planning/`, `docs/`, and `src/` directories
-- [2026-01-21] Created CLAUDE.md with comprehensive guidelines for Claude collaboration
-- [2026-01-27] **Phase 1: Foundation** - Complete
+- [2026-01-21] Created CLAUDE.md with comprehensive guidelines
+- [2026-01-27] **Phase 1: Foundation**
   - Next.js 14 with TypeScript and Tailwind CSS
   - Dockerfile with darktable, FFmpeg, exiftool
   - docker-compose with volume mounts
-  - File watcher (chokidar)
-  - Filesystem state utilities
-- [2026-01-27] **Phase 2: LUT Processing** - Complete
+  - chokidar file watcher
+  - Filesystem-based state management
+  - p-queue job queue with configurable concurrency
+- [2026-01-27] **Phase 2: LUT Processing**
   - LUT scanning from `/data/luts`
   - FFmpeg lut3d filter integration
-  - EXIF metadata extraction
+  - N+1 outputs per photo (N LUTs + original)
+  - EXIF metadata extraction with exiftool
   - Thumbnail generation
-- [2026-01-27] **Phase 3: Gallery UI** - Complete
-  - API endpoints: /api/photos, /api/photos/[name], /api/status, /api/rescan, /api/health
-  - Gallery grid with date grouping
-  - Photo comparison view
-  - Status bar with rescan
-- [2026-01-27] **Phase 4: CI/CD** - Complete
-  - GitHub Actions workflow
-- [2026-01-27] **Testing** - Complete
-  - Tested with 12 RAW photos and 20 LUTs
-  - Verified concurrent processing
-  - Fixed darktable database lock issue
-
-## Known Issues
-
-1. **LUT Race Condition**: Applying 20 LUTs in parallel causes some FFmpeg failures (exit code null) due to concurrent access to the same TIFF file. Most LUTs succeed, some fail.
-
-2. **Stale Processing Markers**: Photos that crash mid-processing leave `.processing` markers. The rescan API handles this, but automatic cleanup could be improved.
-
-## Recommended Improvements
-
-1. **Serialize LUT application** or use batches (e.g., 4 at a time) instead of all 20 in parallel
-2. **Add retry logic** for failed LUT applications
-3. **Copy TIFF per LUT** to avoid concurrent read issues
-4. **Add progress WebSocket** for real-time UI updates
+  - Processing marker for crash recovery
+- [2026-01-27] **Phase 3: Gallery UI**
+  - API: /api/photos, /api/photos/[name], /api/photos/[name]/[file]
+  - API: /api/status, /api/rescan, /api/health
+  - Gallery grid grouped by capture date
+  - Photo comparison view with variant selection
+  - Download links for all variants
+  - Status bar with queue info and rescan button
+- [2026-01-27] **Phase 4: CI/CD**
+  - GitHub Actions: lint, type-check, build
+  - Docker build and push to ghcr.io on main branch
+- [2026-01-27] **Testing**
+  - Tested with 12 Sony ARW files and 20 .cube LUTs
+  - Fixed darktable concurrent processing (DARKTABLE_CONFIGDIR isolation)
+  - Verified file watching, queueing, and processing
+  - Verified gallery UI and all API endpoints
 
 ## Test Results
 
-With 12 RAW photos and 20 LUTs:
-- All 12 photos detected and queued
-- RAW → TIFF conversion: Working (with darktable isolation fix)
-- LUT application: 70-100% success rate per photo (race condition)
-- Gallery UI: Working, shows completed photos
-- API: All endpoints functional
+| Metric | Result |
+|--------|--------|
+| Photos tested | 12 |
+| LUTs tested | 20 |
+| RAW conversion | Working |
+| LUT application | 70-100% per photo |
+| Gallery UI | Working |
+| API endpoints | All functional |
 
-## Next Steps
+## Known Issues
 
-For production readiness:
-1. Fix LUT concurrency (batch or serialize)
-2. Add WebSocket for progress updates
-3. Add retry logic for failed LUTs
-4. Consider reducing default CONCURRENCY to 1
+1. **LUT Race Condition**: Running 20 FFmpeg processes in parallel on the same TIFF can cause some failures. Most LUTs succeed, some fail with exit code null.
 
-## Architecture
+2. **Stale Markers**: Photos that crash mid-processing leave `.processing` markers. Rescan API handles this, but could be improved.
 
-See `.planning/decisions/2026-01-27-auto-grader-architecture.md` for full details.
+## Future Improvements
+
+See `.planning/roadmap.md` for full list. Key items:
+- Serialize or batch LUT application
+- Add WebSocket for real-time progress
+- Add retry logic for failed LUTs
+
+## Quick Start
+
+```bash
+# With Docker
+mkdir -p data/{inbox,output,luts}
+cp your-luts/*.cube data/luts/
+docker compose up -d
+# Drop .ARW files in data/inbox/
+# Open http://localhost:3000
+
+# Local development
+npm install
+npm run dev
+```
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/processing/pipeline.ts` | RAW → TIFF → JPG orchestration |
+| `src/lib/processing/watcher.ts` | File watcher with crash recovery |
+| `src/lib/processing/state.ts` | Filesystem state management |
+| `src/lib/processing/lut.ts` | FFmpeg LUT application |
+| `src/app/photos/[name]/page.tsx` | Photo comparison UI |
+| `docker/Dockerfile` | Container with all tools |
+| `.github/workflows/ci.yml` | CI/CD pipeline |

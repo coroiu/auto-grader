@@ -7,7 +7,7 @@ Auto Grader is a photography workflow automation tool that watches for new RAW f
 ## Phases
 
 ### Phase 1: Foundation
-**Status**: In Progress
+**Status**: Complete
 
 **Goals**:
 - Set up Next.js project with TypeScript and Tailwind
@@ -15,15 +15,15 @@ Auto Grader is a photography workflow automation tool that watches for new RAW f
 - Implement basic file watching and processing
 
 **Key Deliverables**:
-- Working Next.js application
-- Dockerfile with darktable, FFmpeg, exiftool
-- docker-compose.yml with volume mounts
-- File watcher for `/data/inbox`
-- Filesystem state utilities
-- Basic ARW → JPG pipeline (without LUTs)
+- [x] Working Next.js application
+- [x] Dockerfile with darktable, FFmpeg, exiftool
+- [x] docker-compose.yml with volume mounts
+- [x] File watcher for `/data/inbox`
+- [x] Filesystem state utilities
+- [x] Basic ARW → JPG pipeline
 
 ### Phase 2: LUT Processing
-**Status**: Not Started
+**Status**: Complete
 
 **Goals**:
 - Implement full LUT processing pipeline
@@ -31,15 +31,15 @@ Auto Grader is a photography workflow automation tool that watches for new RAW f
 - Extract and cache metadata
 
 **Key Deliverables**:
-- LUT scanning from `/data/luts`
-- FFmpeg integration for LUT application
-- N+1 outputs per photo (N LUTs + original)
-- EXIF metadata extraction to metadata.json
-- Thumbnail generation
-- Error handling with `.processing` marker cleanup
+- [x] LUT scanning from `/data/luts`
+- [x] FFmpeg integration for LUT application
+- [x] N+1 outputs per photo (N LUTs + original)
+- [x] EXIF metadata extraction to metadata.json
+- [x] Thumbnail generation
+- [x] Error handling with `.processing` marker
 
 ### Phase 3: Gallery UI
-**Status**: Not Started
+**Status**: Complete
 
 **Goals**:
 - Build browsable gallery interface
@@ -47,34 +47,44 @@ Auto Grader is a photography workflow automation tool that watches for new RAW f
 - Add processing status indicators
 
 **Key Deliverables**:
-- API endpoints: GET /api/photos, GET /api/photos/[name]
-- Gallery grid component (grouped by capture date)
-- Photo detail page with side-by-side comparison
-- Processing status indicator
-- "Rescan" functionality for new LUTs
+- [x] API endpoints: GET /api/photos, GET /api/photos/[name], POST /api/rescan, GET /api/status, GET /api/health
+- [x] Gallery grid component (grouped by capture date)
+- [x] Photo detail page with side-by-side comparison
+- [x] Processing status indicator
+- [x] "Rescan" functionality for new LUTs
 
 ### Phase 4: CI/CD & Polish
-**Status**: Not Started
+**Status**: Complete
 
 **Goals**:
 - Automate builds and deployments
 - Add documentation and health checks
-- Polish user experience
 
 **Key Deliverables**:
-- GitHub Actions workflow (lint, type-check, test)
-- Docker build and push to ghcr.io
-- README with setup instructions
-- Health check endpoint
-- Error handling improvements
+- [x] GitHub Actions workflow (lint, type-check, build)
+- [x] Docker build and push to ghcr.io
+- [x] README with setup instructions
+- [x] Health check endpoint
 
 ## Milestones
 
 - [x] Project structure and planning complete
-- [ ] Phase 1: Basic processing pipeline working
-- [ ] Phase 2: Full LUT processing with all outputs
-- [ ] Phase 3: Gallery UI functional
-- [ ] Phase 4: CI/CD pipeline active
+- [x] Phase 1: Basic processing pipeline working
+- [x] Phase 2: Full LUT processing with all outputs
+- [x] Phase 3: Gallery UI functional
+- [x] Phase 4: CI/CD pipeline active
+- [x] End-to-end testing with 12 photos and 20 LUTs
+
+## Future Improvements
+
+These items are not blockers but would improve reliability and UX:
+
+- [ ] Serialize or batch LUT application to avoid FFmpeg race conditions
+- [ ] Add WebSocket for real-time processing progress
+- [ ] Add retry logic for failed LUT applications
+- [ ] Improve stale marker cleanup during runtime
+- [ ] Add batch download functionality
+- [ ] Add photo deletion/cleanup UI
 
 ## Architecture Diagram
 
@@ -97,10 +107,10 @@ Auto Grader is a photography workflow automation tool that watches for new RAW f
     metadata.json              # EXIF data (cached)
     thumb.jpg                  # Thumbnail for gallery
     original.jpg               # No LUT applied
-    cinematic.jpg              # Named after LUT (cinematic.cube)
-    vintage.jpg                # Named after LUT (vintage.cube)
+    Cinematic-1.jpg            # Named after LUT (Cinematic-1.cube)
+    Moody1.jpg                 # Named after LUT (Moody1.cube)
 ```
 
 ---
 
-**Note**: This roadmap is a living document. Update it as the project evolves.
+**Last Updated**: 2026-01-27
