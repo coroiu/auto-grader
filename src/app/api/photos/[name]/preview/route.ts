@@ -4,6 +4,34 @@ import path from 'path';
 import { config } from '@/lib/processing';
 import { createPreviewTiff } from '@/lib/processing/raw';
 
+/**
+ * Recursively search for a file in a directory
+ */
+async function findFileRecursively(
+  dir: string,
+  filename: string
+): Promise<string | null> {
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+
+      if (entry.isDirectory()) {
+        // Recurse into subdirectory
+        const found = await findFileRecursively(fullPath, filename);
+        if (found) return found;
+      } else if (entry.name === filename) {
+        return fullPath;
+      }
+    }
+  } catch {
+    // Directory doesn't exist or not readable
+  }
+
+  return null;
+}
+
 export const dynamic = 'force-dynamic';
 
 // Track in-progress preview generations to avoid duplicate work
@@ -41,22 +69,29 @@ export async function GET(
       // Preview doesn't exist, need to generate it
     }
 
-    // Find the RAW file
+    // Find the RAW file (search recursively in case files are in subfolders)
     let rawPath: string | null = null;
     for (const ext of config.rawExtensions) {
-      const candidatePath = path.join(config.inboxDir, `${safeName}${ext}`);
+      const filename = `${safeName}${ext}`;
+      // First try direct path (faster)
+      const directPath = path.join(config.inboxDir, filename);
       try {
-        await fs.access(candidatePath);
-        rawPath = candidatePath;
+        await fs.access(directPath);
+        rawPath = directPath;
         break;
       } catch {
-        // Try next extension
+        // Try recursive search
+        const found = await findFileRecursively(config.inboxDir, filename);
+        if (found) {
+          rawPath = found;
+          break;
+        }
       }
     }
 
     if (!rawPath) {
       console.error(
-        `[API] Preview: RAW file not found for ${safeName}. Searched in ${config.inboxDir} for extensions: ${config.rawExtensions.join(', ')}`
+        `[API] Preview: RAW file not found for ${safeName}. Searched recursively in ${config.inboxDir} for extensions: ${config.rawExtensions.join(', ')}`
       );
       return NextResponse.json(
         { error: 'RAW file not found in inbox' },
