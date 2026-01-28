@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import path from 'path';
+import { config } from './config';
 
 /**
  * Convert RAW file to TIFF using darktable-cli
@@ -158,6 +159,76 @@ export async function createThumbnail(
 
     proc.on('error', (err) => {
       reject(new Error(`Failed to spawn ffmpeg: ${err.message}`));
+    });
+  });
+}
+
+/**
+ * Create a preview TIFF from a RAW file (downsized for browser editing)
+ * Uses darktable-cli with width constraint to generate a smaller preview
+ */
+export async function createPreviewTiff(
+  rawPath: string,
+  outputPath: string,
+  maxWidth: number = config.previewWidth
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // Use the output directory as a unique config directory
+    const configDir = path.dirname(outputPath);
+
+    // darktable-cli with width constraint for preview
+    // --width sets the max width, height scales proportionally
+    const args = [
+      rawPath,
+      outputPath,
+      '--apply-custom-presets',
+      'false',
+      '--width',
+      maxWidth.toString(),
+      '--out-ext',
+      'tif',
+      '--core',
+      '--conf',
+      'plugins/imageio/format/tiff/bpp=16',
+    ];
+
+    console.log(
+      `[RAW] Creating preview TIFF (${maxWidth}px) from ${path.basename(rawPath)}...`
+    );
+
+    const env = {
+      ...process.env,
+      DARKTABLE_CONFIGDIR: configDir,
+    };
+
+    const proc = spawn('darktable-cli', args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env,
+    });
+
+    let stderr = '';
+
+    proc.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    proc.on('close', (code) => {
+      if (code === 0) {
+        console.log(
+          `[RAW] Created preview TIFF for ${path.basename(rawPath)} successfully`
+        );
+        resolve();
+      } else {
+        reject(
+          new Error(
+            `darktable-cli (preview) exited with code ${code}: ${stderr.slice(0, 500)}`
+          )
+        );
+      }
+    });
+
+    proc.on('error', (err) => {
+      reject(new Error(`Failed to spawn darktable-cli: ${err.message}`));
     });
   });
 }

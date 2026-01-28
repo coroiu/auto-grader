@@ -40,4 +40,8 @@ export const config = {
 
   // Thumbnail size
   thumbnailWidth: 400,
+
+  // Preview TIFF settings (for browser-based editing)
+  previewFile: 'preview.tif',
+  previewWidth: parseInt(process.env.PREVIEW_WIDTH || '2048', 10),
 };
