@@ -43,5 +43,5 @@ export const config = {
 
   // Preview TIFF settings (for browser-based editing)
   previewFile: 'preview.tif',
-  previewWidth: parseInt(process.env.PREVIEW_WIDTH || '2048', 10),
+  previewWidth: parseInt(process.env.PREVIEW_WIDTH || '1280', 10),
 };

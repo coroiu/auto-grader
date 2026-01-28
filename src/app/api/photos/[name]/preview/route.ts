@@ -55,8 +55,11 @@ export async function GET(
     }
 
     if (!rawPath) {
+      console.error(
+        `[API] Preview: RAW file not found for ${safeName}. Searched in ${config.inboxDir} for extensions: ${config.rawExtensions.join(', ')}`
+      );
       return NextResponse.json(
-        { error: 'RAW file not found' },
+        { error: 'RAW file not found in inbox' },
         { status: 404 }
       );
     }
