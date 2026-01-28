@@ -36,6 +36,9 @@ export class ImageGrader {
   private exposure: number = 0;
   private lutEnabled: boolean = true;
 
+  // Extension support
+  private hasFloatLinear: boolean = false;
+
   constructor(canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl2', {
       alpha: false,
@@ -49,10 +52,13 @@ export class ImageGrader {
     }
     this.gl = gl;
 
-    // Check for required extension
-    const floatTextureExt = gl.getExtension('EXT_color_buffer_float');
-    if (!floatTextureExt) {
-      console.warn('EXT_color_buffer_float not available');
+    // Enable required extensions
+    gl.getExtension('EXT_color_buffer_float');
+
+    // This extension is required for LINEAR filtering on float textures
+    this.hasFloatLinear = !!gl.getExtension('OES_texture_float_linear');
+    if (!this.hasFloatLinear) {
+      console.warn('[ImageGrader] OES_texture_float_linear not available, using NEAREST filtering');
     }
 
     // Compile shaders and create program
@@ -88,7 +94,9 @@ export class ImageGrader {
       }
     `;
 
-    // Fragment shader - exposure adjustment + LUT application + sRGB conversion
+    // Fragment shader - exposure adjustment + LUT application
+    // Note: darktable outputs sRGB gamma-corrected TIFFs, so we work in sRGB space
+    // For exposure adjustment in sRGB, we need to linearize, adjust, then re-apply gamma
     const fsSource = `#version 300 es
       precision highp float;
       precision highp sampler3D;
@@ -102,35 +110,51 @@ export class ImageGrader {
       uniform float uLUTSize;    // LUT dimension (e.g., 33.0)
       uniform bool uLUTEnabled;  // Toggle LUT on/off
 
+      // sRGB to linear conversion
+      vec3 srgbToLinear(vec3 srgb) {
+        return mix(
+          srgb / 12.92,
+          pow((srgb + 0.055) / 1.055, vec3(2.4)),
+          step(0.04045, srgb)
+        );
+      }
+
+      // Linear to sRGB conversion
+      vec3 linearToSrgb(vec3 linear) {
+        return mix(
+          linear * 12.92,
+          1.055 * pow(linear, vec3(1.0 / 2.4)) - 0.055,
+          step(0.0031308, linear)
+        );
+      }
+
       void main() {
-        // Sample source image (linear RGB)
+        // Sample source image (sRGB from darktable)
         vec3 color = texture(uImage, vTexCoord).rgb;
 
-        // Apply exposure adjustment (in stops/EV)
-        // pow(2.0, exposure) is the standard photographic exposure formula
-        color *= pow(2.0, uExposure);
+        // Apply exposure adjustment
+        if (uExposure != 0.0) {
+          // Convert to linear for proper exposure math
+          vec3 linear = srgbToLinear(color);
+          // Apply exposure in stops
+          linear *= pow(2.0, uExposure);
+          // Convert back to sRGB
+          color = linearToSrgb(clamp(linear, 0.0, 1.0));
+        }
 
         // Clamp to valid range before LUT lookup
         color = clamp(color, 0.0, 1.0);
 
         // Apply 3D LUT if enabled
+        // LUTs expect sRGB input and produce sRGB output
         if (uLUTEnabled && uLUTSize > 0.0) {
           // Scale coordinates to account for LUT texel centers
-          // This ensures we sample at the center of each LUT cell
           float scale = (uLUTSize - 1.0) / uLUTSize;
           float offset = 0.5 / uLUTSize;
           vec3 lutCoord = color * scale + offset;
 
           color = texture(uLUT, lutCoord).rgb;
         }
-
-        // Apply sRGB gamma for display (linear -> sRGB)
-        // This is the inverse of the sRGB EOTF
-        color = mix(
-          color * 12.92,
-          1.055 * pow(color, vec3(1.0 / 2.4)) - 0.055,
-          step(0.0031308, color)
-        );
 
         fragColor = vec4(color, 1.0);
       }
@@ -263,8 +287,10 @@ export class ImageGrader {
       gl.FLOAT,
       floatData
     );
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    // Use LINEAR filtering if extension available, otherwise NEAREST
+    const filterMode = this.hasFloatLinear ? gl.LINEAR : gl.NEAREST;
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filterMode);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filterMode);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
