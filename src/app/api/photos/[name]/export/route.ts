@@ -165,50 +165,34 @@ export async function GET(
     // Build filter chain
     const filters: string[] = [];
 
-    // Exposure adjustment using the eq filter
-    // The brightness parameter in eq is linear, so we need to convert EV to a multiplier
-    // EV to multiplier: multiplier = 2^EV
-    // Then for eq brightness: we use gamma to approximate exposure
-    // A simpler approach: use curves or lutrgb for more accurate exposure
-    // Actually, the simplest accurate way is to use the colorlevels filter or colorbalance
-    // Let's use a combination approach:
-    // - For exposure, we use the eq filter with gamma (approximate) or multiply directly
+    // Exposure adjustment for sRGB images
+    // The TIFF from darktable is sRGB gamma-corrected, so we need to:
+    // 1. Convert to linear (approximate with gamma=2.2)
+    // 2. Apply exposure multiplier
+    // 3. Convert back to sRGB (approximate with gamma=1/2.2)
+    //
+    // Using the 'curves' filter with 'all' channel and a power function
+    // For exposure adjustment: output = input^(1/2.2) * multiplier)^2.2
+    // Simplified using eq filter's gamma: gamma adjustment can approximate this
+    //
+    // The 'eq' filter gamma works on the whole image:
+    // - gamma < 1 = brighter (like positive exposure)
+    // - gamma > 1 = darker (like negative exposure)
+    //
+    // For proper EV adjustment in sRGB: gamma ≈ 1 / (2^(exposure * 0.5))
+    // This is an approximation that works reasonably well for sRGB content
 
     if (exposure !== 0) {
-      // Convert EV to linear multiplier
-      const multiplier = Math.pow(2, exposure);
-      // Use colorlevels to apply linear gain
-      // Syntax: colorlevels=rimax=multiplier:gimax=multiplier:bimax=multiplier
-      // But that's not quite right either. Let's use lutrgb which is more flexible.
-
-      // Actually, the most accurate way is to apply exposure in linear space.
-      // Since our TIFF is 16-bit linear, we can use:
-      // - multiply filter (available in recent FFmpeg)
-      // Or we can use lut to apply the gain:
-      // lutrgb=r=val*multiplier:g=val*multiplier:b=val*multiplier
-
-      // Using lutrgb for exposure adjustment
-      // Note: val is 0-255 for 8-bit, but we're working with 16-bit TIFF
-      // FFmpeg normalizes internally, so we can use: r=clip(val*mult,0,255)
-      // For proper 16-bit handling, we should ensure the output handles it properly
-
-      // Simpler approach that works well in practice:
-      // Use the eq filter's gamma for exposure (gamma = 1/multiplier for appearance)
-      // Or use colorbalance/colorlevels
-
-      // Let's use a simple approach: apply gamma correction approximating exposure
-      // gamma = 1/2^(exposure) for perceptual match, but for linear gain:
-      // We'll use lutyuv or lutrgb
-
-      // For simplicity and accuracy, let's construct an expression-based lut:
-      // This applies linear gain in the [0,1] range and clamps
-      filters.push(`lutrgb=r='clip(val*${multiplier.toFixed(6)},0,255)':g='clip(val*${multiplier.toFixed(6)},0,255)':b='clip(val*${multiplier.toFixed(6)},0,255)'`);
+      // Approximate EV adjustment using gamma
+      // This isn't perfect but is close for typical adjustments
+      const gamma = Math.pow(2, -exposure * 0.45);
+      filters.push(`eq=gamma=${gamma.toFixed(4)}`);
     }
 
     // LUT application
     if (safeLutName) {
       const lutPath = path.join(config.lutsDir, `${safeLutName}.cube`);
-      filters.push(`lut3d='${lutPath}'`);
+      filters.push(`lut3d=${lutPath}`);
     }
 
     // Build FFmpeg command
