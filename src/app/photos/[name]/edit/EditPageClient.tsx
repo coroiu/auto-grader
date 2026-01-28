@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import { ImageEditor } from '@/components/ImageEditor';
+import { ImageGrader } from '@/lib/webgl';
 
 interface LutInfo {
   name: string;
@@ -15,65 +16,82 @@ interface EditPageClientProps {
 
 export function EditPageClient({ photoName, luts }: EditPageClientProps) {
   const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState('');
   const [exportError, setExportError] = useState<string | null>(null);
+  const exportCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const previewUrl = `/api/photos/${encodeURIComponent(photoName)}/preview`;
+  const fullResUrl = `/api/photos/${encodeURIComponent(photoName)}/full-tiff`;
 
   const handleExport = useCallback(
     async (settings: { exposure: number; lut: string | null }) => {
       setIsExporting(true);
       setExportError(null);
+      setExportProgress('Creating canvas...');
 
       try {
-        // Build export URL with query params
-        const params = new URLSearchParams();
-        params.set('exposure', settings.exposure.toString());
-        if (settings.lut) {
-          params.set('lut', settings.lut);
+        // Create an offscreen canvas for full-res export
+        if (!exportCanvasRef.current) {
+          exportCanvasRef.current = document.createElement('canvas');
         }
+        const canvas = exportCanvasRef.current;
 
-        const exportUrl = `/api/photos/${encodeURIComponent(photoName)}/export?${params.toString()}`;
+        // Create a new ImageGrader for full-res processing
+        setExportProgress('Loading full resolution TIFF...');
+        const grader = new ImageGrader(canvas);
 
-        // Fetch the exported image
-        const response = await fetch(exportUrl);
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({}));
-          throw new Error(error.error || `Export failed: ${response.status}`);
+        try {
+          // Load the full-res TIFF
+          await grader.loadImage(fullResUrl);
+
+          // Apply exposure
+          setExportProgress('Applying exposure...');
+          grader.setExposure(settings.exposure);
+
+          // Apply LUT if selected
+          if (settings.lut) {
+            setExportProgress('Applying color grade...');
+            const lutUrl = luts.find((l) => l.name === settings.lut)?.url;
+            if (lutUrl) {
+              await grader.loadLUT(lutUrl);
+            }
+          }
+
+          // Export to blob
+          setExportProgress('Generating JPG...');
+          const blob = await grader.toBlob('image/jpeg', 0.95);
+
+          // Create download
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${photoName}-edited.jpg`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } finally {
+          grader.dispose();
         }
-
-        // Get the blob and create download
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-
-        // Create download link
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${photoName}-edited.jpg`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        // Clean up
-        URL.revokeObjectURL(url);
       } catch (err) {
+        console.error('Export failed:', err);
         setExportError(err instanceof Error ? err.message : 'Export failed');
       } finally {
         setIsExporting(false);
+        setExportProgress('');
       }
     },
-    [photoName]
+    [photoName, fullResUrl, luts]
   );
 
   return (
     <div>
       {isExporting && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 text-center">
+          <div className="bg-gray-800 rounded-lg p-6 text-center max-w-sm">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-4"></div>
             <p className="text-gray-300">Exporting full resolution...</p>
-            <p className="text-gray-500 text-sm mt-1">
-              This may take a moment
-            </p>
+            <p className="text-gray-500 text-sm mt-1">{exportProgress}</p>
           </div>
         </div>
       )}
