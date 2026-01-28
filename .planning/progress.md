@@ -63,6 +63,14 @@ Phases 1-6 complete. Core functionality, UX improvements, and gallery performanc
   - Header now scrolls away naturally with page content
   - Better mobile UX with more screen real estate for photos
   - Added `scrollMargin` tracking for correct item positioning
+- [2026-01-28] **Browser-Based Image Editor**
+  - WebGL2 real-time exposure adjustment and LUT preview
+  - On-demand preview TIFF generation (2048px)
+  - image-js/tiff for 16-bit TIFF decoding
+  - 3D texture LUT application with trilinear interpolation
+  - localStorage session persistence per-photo
+  - Full-resolution export with applied settings
+  - See `.planning/decisions/2026-01-28-browser-based-image-editing.md`
 
 ## Test Results
 
@@ -91,15 +99,19 @@ All major known issues have been addressed:
 
 ## In Progress
 
+None currently.
+
+## Recently Completed
+
 - [2026-01-28] **Browser-Based Image Editor** (WebGL exposure + LUT editing)
   - See `.planning/decisions/2026-01-28-browser-based-image-editing.md`
   - See `.research/findings/2026-01-28-webgl-image-processing.md`
   - Phase 0: Documentation - Complete
-  - Phase 1: Backend APIs (preview TIFF, LUT endpoints) - Pending
-  - Phase 2: WebGL core (ImageGrader, cube parser) - Pending
-  - Phase 3: React editor component - Pending
-  - Phase 4: localStorage persistence - Pending
-  - Phase 5: Full-resolution export - Pending
+  - Phase 1: Backend APIs (preview TIFF, LUT endpoints) - Complete
+  - Phase 2: WebGL core (ImageGrader, cube parser) - Complete
+  - Phase 3: React editor component - Complete
+  - Phase 4: localStorage persistence - Complete
+  - Phase 5: Full-resolution export - Complete
 
 ## Future Improvements
 
