@@ -20,8 +20,8 @@ export function PhotoComparison({ photo }: PhotoComparisonProps) {
   );
   const [loadedFromStorage, setLoadedFromStorage] = useState(false);
 
-  // localStorage key for this photo
-  const storageKey = `variant-selection-${photo.name}`;
+  // Global localStorage key (same selection across all photos)
+  const storageKey = 'variant-selection';
 
   // Embla carousel setup
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
