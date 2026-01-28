@@ -1,7 +1,8 @@
 export async function register() {
   // Only run on the server
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const { startWatcher } = await import('@/lib/processing');
+    // Import watcher directly (not from barrel file) to avoid bundling issues
+    const { startWatcher } = await import('@/lib/processing/watcher');
 
     console.log('[INIT] Starting Auto Grader...');
 

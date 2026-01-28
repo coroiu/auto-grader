@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { rescan } from '@/lib/processing';
+// Import directly from watcher to avoid issues with barrel file
+import { rescan } from '@/lib/processing/watcher';
 
 export const dynamic = 'force-dynamic';
 

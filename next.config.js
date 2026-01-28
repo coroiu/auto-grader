@@ -3,6 +3,7 @@ const nextConfig = {
   output: 'standalone',
   experimental: {
     instrumentationHook: true,
+    serverComponentsExternalPackages: ['chokidar', 'fsevents'],
   },
   images: {
     remotePatterns: [

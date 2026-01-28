@@ -1,10 +1,10 @@
 # Project Progress
 
-**Last Updated**: 2026-01-27
+**Last Updated**: 2026-01-28
 
 ## Current Status
 
-Phases 1-5 complete and tested. Core functionality and UX improvements are all implemented.
+Phases 1-6 complete. Core functionality, UX improvements, and gallery performance optimization are all implemented.
 
 ## Completed
 
@@ -46,6 +46,13 @@ Phases 1-5 complete and tested. Core functionality and UX improvements are all i
   - Desktop: Shift+click for multi-select (add/remove)
   - Dot indicators for carousel navigation on mobile
   - SSR-safe useMediaQuery hook for responsive detection
+- [2026-01-28] **Phase 6: Gallery Performance Optimization**
+  - In-memory photo store with chokidar output watcher
+  - Virtual scroll gallery using @tanstack/react-virtual
+  - Server response: 3-5s → <10ms (memory read vs filesystem scan)
+  - DOM nodes: ~2500 → ~30 (constant regardless of photo count)
+  - Automatic photo updates when processing completes
+  - See `.planning/decisions/2026-01-28-gallery-performance-optimization.md`
 
 ## Test Results
 
@@ -103,9 +110,12 @@ npm run dev
 | `src/lib/processing/pipeline.ts` | RAW → TIFF → JPG orchestration |
 | `src/lib/processing/watcher.ts` | File watcher with crash recovery |
 | `src/lib/processing/state.ts` | Filesystem state management |
+| `src/lib/processing/photoStore.ts` | In-memory photo store + output watcher |
+| `src/lib/processing/photoStoreData.ts` | Photo store data (no chokidar dep) |
 | `src/lib/processing/lut.ts` | FFmpeg LUT application |
 | `src/app/photos/[name]/page.tsx` | Photo comparison UI |
 | `src/app/photos/[name]/PhotoComparison.tsx` | Carousel/grid comparison view |
+| `src/components/VirtualGallery.tsx` | Virtual scroll gallery |
 | `src/hooks/useMediaQuery.ts` | SSR-safe responsive detection |
 | `docker/Dockerfile` | Container with all tools |
 | `.github/workflows/ci.yml` | CI/CD pipeline |

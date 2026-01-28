@@ -1,8 +1,11 @@
 import { Gallery } from '@/components/Gallery';
 import { StatusBar } from '@/components/StatusBar';
-import { getPhotos } from '@/lib/processing';
+// Import directly from state to avoid pulling in chokidar via watcher.ts
+import { getPhotos } from '@/lib/processing/state';
 
-export const dynamic = 'force-dynamic';
+// Use revalidate = 0 to always fetch fresh data from in-memory store
+// The photo store provides instant responses so this is fast
+export const revalidate = 0;
 
 export default async function Home() {
   const photos = await getPhotos();

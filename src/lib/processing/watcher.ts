@@ -4,6 +4,7 @@ import { config } from './config';
 import { processingQueue } from './queue';
 import { scanForPendingWork } from './state';
 import { cleanupStaleMarkers } from './pipeline';
+import { initPhotoStore, stopPhotoStore, refreshPhotoStore } from './photoStore';
 
 let watcher: chokidar.FSWatcher | null = null;
 let cleanupInterval: NodeJS.Timeout | null = null;
@@ -24,6 +25,9 @@ export async function startWatcher(): Promise<void> {
   if (cleaned.length > 0) {
     console.log(`[WATCHER] Cleaned ${cleaned.length} stale processing markers`);
   }
+
+  // Initialize the photo store (scans filesystem once and starts output watcher)
+  await initPhotoStore();
 
   // Scan for any pending work (files added while process was down)
   const pendingWork = await scanForPendingWork();
@@ -110,6 +114,9 @@ export async function stopWatcher(): Promise<void> {
     watcher = null;
     console.log('[WATCHER] Stopped');
   }
+
+  // Stop the photo store watcher
+  await stopPhotoStore();
 }
 
 /**
@@ -117,6 +124,9 @@ export async function stopWatcher(): Promise<void> {
  */
 export async function rescan(): Promise<number> {
   console.log('[WATCHER] Rescanning for pending work...');
+
+  // Refresh the photo store to pick up any changes (e.g., new LUTs)
+  await refreshPhotoStore();
 
   const pendingWork = await scanForPendingWork();
 

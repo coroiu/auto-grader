@@ -1,6 +1,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { config } from './config';
+// Import from photoStoreData to avoid chokidar dependency in bundled code
+import { getPhotosFromStore, isPhotoStoreInitialized } from './photoStoreData';
 
 export interface PhotoState {
   name: string;
@@ -148,9 +150,22 @@ export async function getPhotoState(photoName: string): Promise<PhotoState> {
 }
 
 /**
- * Get all photos from the output directory
+ * Get all photos - uses in-memory store if initialized, otherwise scans filesystem
  */
 export async function getPhotos(): Promise<Photo[]> {
+  // Use the in-memory store if it's initialized (fast path)
+  if (isPhotoStoreInitialized()) {
+    return getPhotosFromStore();
+  }
+
+  // Fallback to filesystem scan (during startup before watcher initializes)
+  return scanPhotosFromFilesystem();
+}
+
+/**
+ * Scan all photos from the filesystem (slow path, used as fallback)
+ */
+async function scanPhotosFromFilesystem(): Promise<Photo[]> {
   try {
     const entries = await fs.readdir(config.outputDir, { withFileTypes: true });
     const photos: Photo[] = [];

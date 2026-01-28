@@ -6,6 +6,7 @@ This directory contains individual decision records. Each file documents one sig
 
 | Date | Decision | Status | File |
 |------|----------|--------|------|
+| 2026-01-28 | Gallery performance optimization (in-memory store, virtual scroll) | Accepted | [2026-01-28-gallery-performance-optimization.md](2026-01-28-gallery-performance-optimization.md) |
 | 2026-01-27 | Auto Grader architecture (single container, filesystem state) | Accepted | [2026-01-27-auto-grader-architecture.md](2026-01-27-auto-grader-architecture.md) |
 | 2026-01-21 | Project structure and documentation system | Accepted | [2026-01-21-project-structure.md](2026-01-21-project-structure.md) |
 
