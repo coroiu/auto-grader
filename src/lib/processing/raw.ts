@@ -17,6 +17,7 @@ export async function convertRawToTiff(
     // darktable-cli <input> <output> [options]
     // Using 16-bit TIFF for maximum quality before LUT application
     // --apply-custom-presets false is needed for concurrent instances
+    // Compression: 0=none, 1=deflate, 2=lzw - using deflate for good compression
     const args = [
       rawPath,
       outputPath,
@@ -27,6 +28,8 @@ export async function convertRawToTiff(
       '--core',
       '--conf',
       'plugins/imageio/format/tiff/bpp=16',
+      '--conf',
+      'plugins/imageio/format/tiff/compress=1',
     ];
 
     console.log(`[RAW] Converting ${path.basename(rawPath)} to TIFF...`);
@@ -178,6 +181,7 @@ export async function createPreviewTiff(
 
     // darktable-cli with width constraint for preview
     // --width sets the max width, height scales proportionally
+    // Using deflate compression to reduce file size
     const args = [
       rawPath,
       outputPath,
@@ -190,6 +194,8 @@ export async function createPreviewTiff(
       '--core',
       '--conf',
       'plugins/imageio/format/tiff/bpp=16',
+      '--conf',
+      'plugins/imageio/format/tiff/compress=1',
     ];
 
     console.log(
