@@ -53,6 +53,11 @@ Phases 1-6 complete. Core functionality, UX improvements, and gallery performanc
   - DOM nodes: ~2500 → ~30 (constant regardless of photo count)
   - Automatic photo updates when processing completes
   - See `.planning/decisions/2026-01-28-gallery-performance-optimization.md`
+- [2026-01-28] **Variant Selection Persistence**
+  - localStorage persistence for variant selections per photo
+  - Selections remembered across page refreshes and sessions
+  - Graceful fallback to defaults if localStorage unavailable
+  - Handles variant list changes (filters to valid variants only)
 
 ## Test Results
 

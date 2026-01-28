@@ -14,25 +14,58 @@ export function PhotoComparison({ photo }: PhotoComparisonProps) {
   const isMobile = useMediaQuery('(max-width: 767px)');
 
   // Initialize with first 2 variants (safe SSR default)
-  // Will be updated on mount based on device
+  // Will be updated on mount based on device or localStorage
   const [selectedVariants, setSelectedVariants] = useState<string[]>(
     photo.variants.slice(0, 2).map((v) => v.name)
   );
-  const [initializedForMobile, setInitializedForMobile] = useState(false);
+  const [loadedFromStorage, setLoadedFromStorage] = useState(false);
+
+  // localStorage key for this photo
+  const storageKey = `variant-selection-${photo.name}`;
 
   // Embla carousel setup
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Update selection based on device after hydration
-  // Need to wait for isMobile to be accurate (after first client render)
+  // Load from localStorage on mount, or apply defaults
   useEffect(() => {
-    if (isMobile && !initializedForMobile) {
-      // Mobile: select all variants by default
-      setSelectedVariants(photo.variants.map((v) => v.name));
-      setInitializedForMobile(true);
+    if (loadedFromStorage) return;
+
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as string[];
+        // Filter to only variants that still exist
+        const valid = parsed.filter((name) =>
+          photo.variants.some((v) => v.name === name)
+        );
+        if (valid.length > 0) {
+          setSelectedVariants(valid);
+          setLoadedFromStorage(true);
+          return;
+        }
+      }
+    } catch {
+      // Ignore localStorage errors (private browsing, etc.)
     }
-  }, [isMobile, initializedForMobile, photo.variants]);
+
+    // No valid saved selection - apply defaults based on device
+    if (isMobile) {
+      setSelectedVariants(photo.variants.map((v) => v.name));
+    }
+    setLoadedFromStorage(true);
+  }, [storageKey, photo.variants, isMobile, loadedFromStorage]);
+
+  // Save to localStorage when selection changes
+  useEffect(() => {
+    if (!loadedFromStorage) return; // Don't save until we've loaded
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(selectedVariants));
+    } catch {
+      // Ignore localStorage errors (quota, private mode, etc.)
+    }
+  }, [selectedVariants, storageKey, loadedFromStorage]);
 
   // Track current slide in carousel
   const onSelect = useCallback(() => {
