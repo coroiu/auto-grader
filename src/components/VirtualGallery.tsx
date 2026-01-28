@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useMemo, useState, useEffect } from 'react';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -17,7 +17,8 @@ type VirtualRow =
 
 const HEADER_HEIGHT = 48;
 const GAP = 16; // gap-4 = 1rem = 16px
-const FOOTER_HEIGHT = 52; // p-3 with text
+// Footer: p-3 (24px padding) + text-sm (~20px) + mt-1 (4px) + text-xs (~16px) = 64px
+const FOOTER_HEIGHT = 64;
 
 function groupByDate(photos: Photo[]): Record<string, Photo[]> {
   const groups: Record<string, Photo[]> = {};
@@ -64,9 +65,13 @@ function buildVirtualRows(photos: Photo[], columnsPerRow: number): VirtualRow[] 
 }
 
 function getPhotoRowHeight(containerWidth: number, columns: number): number {
-  const cardWidth = (containerWidth - GAP * (columns - 1)) / columns;
-  const imageHeight = cardWidth * (2 / 3); // 3:2 aspect ratio
-  return imageHeight + FOOTER_HEIGHT + GAP;
+  // Account for gaps between columns
+  const totalGapWidth = GAP * (columns - 1);
+  const cardWidth = (containerWidth - totalGapWidth) / columns;
+  // aspect-[3/2] means width:height = 3:2, so height = width * (2/3)
+  const imageHeight = cardWidth * (2 / 3);
+  // Total row height = image + footer + gap below row
+  return Math.ceil(imageHeight + FOOTER_HEIGHT + GAP);
 }
 
 export function VirtualGallery({ photos }: VirtualGalleryProps) {
@@ -103,20 +108,40 @@ export function VirtualGallery({ photos }: VirtualGalleryProps) {
     [photos, columns]
   );
 
-  const photoRowHeight = useMemo(
-    () => (containerWidth > 0 ? getPhotoRowHeight(containerWidth, columns) : 300),
-    [containerWidth, columns]
+  const getRowHeight = useCallback(
+    (index: number) => {
+      if (containerWidth === 0) return 200;
+      return rows[index].type === 'header'
+        ? HEADER_HEIGHT
+        : getPhotoRowHeight(containerWidth, columns);
+    },
+    [containerWidth, columns, rows]
   );
 
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: (index) =>
-      rows[index].type === 'header' ? HEADER_HEIGHT : photoRowHeight,
-    overscan: 5, // Render 5 extra rows above/below viewport
+    estimateSize: getRowHeight,
+    overscan: 3,
   });
 
+  // Force remeasure when dimensions change
+  useEffect(() => {
+    if (containerWidth > 0) {
+      virtualizer.measure();
+    }
+  }, [containerWidth, columns, virtualizer]);
+
   const virtualItems = virtualizer.getVirtualItems();
+
+  // Show loading placeholder until we have a valid width
+  if (containerWidth === 0) {
+    return (
+      <div ref={parentRef} className="h-[calc(100vh-12rem)] overflow-auto">
+        <div className="animate-pulse text-gray-500">Loading gallery...</div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -151,9 +176,10 @@ export function VirtualGallery({ photos }: VirtualGalleryProps) {
                 </h2>
               ) : (
                 <div
-                  className="grid gap-4"
+                  className="grid"
                   style={{
                     gridTemplateColumns: `repeat(${columns}, 1fr)`,
+                    gap: `${GAP}px`,
                   }}
                 >
                   {row.photos.map((photo) => (
