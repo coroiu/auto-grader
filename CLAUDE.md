@@ -9,7 +9,10 @@
 3. Read specific decision files as needed from `.planning/decisions/`
 4. Check `.research/findings/INDEX.md` for research findings relevant to current work
 5. Regularly commit your changes to `git` with descriptive messages
-6. Follow the conventions below when working on this project
+6. Update `.planning/progress.md` at the end of each session
+7. ⚠️ Document new decisions and research findings in their respective directories. This is especially important to do after a planning session before starting implementation.
+8. Use docker container for testing and development
+9. Follow the conventions below when working on this project
 
 ## Project Structure
 
