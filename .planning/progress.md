@@ -91,7 +91,15 @@ All major known issues have been addressed:
 
 ## In Progress
 
-None currently.
+- [2026-01-28] **Browser-Based Image Editor** (WebGL exposure + LUT editing)
+  - See `.planning/decisions/2026-01-28-browser-based-image-editing.md`
+  - See `.research/findings/2026-01-28-webgl-image-processing.md`
+  - Phase 0: Documentation - Complete
+  - Phase 1: Backend APIs (preview TIFF, LUT endpoints) - Pending
+  - Phase 2: WebGL core (ImageGrader, cube parser) - Pending
+  - Phase 3: React editor component - Pending
+  - Phase 4: localStorage persistence - Pending
+  - Phase 5: Full-resolution export - Pending
 
 ## Future Improvements
 

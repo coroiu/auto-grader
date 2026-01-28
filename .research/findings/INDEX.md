@@ -6,6 +6,7 @@ This directory contains individual research findings. Each file documents resear
 
 | Date | Topic | Status | File |
 |------|-------|--------|------|
+| 2026-01-28 | WebGL image processing for photography editing | Complete | [2026-01-28-webgl-image-processing.md](2026-01-28-webgl-image-processing.md) |
 | 2026-01-21 | Project template structure | Complete | [2026-01-21-template-structure.md](2026-01-21-template-structure.md) |
 
 ## How to Add New Findings
