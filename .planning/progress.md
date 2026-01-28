@@ -58,6 +58,11 @@ Phases 1-6 complete. Core functionality, UX improvements, and gallery performanc
   - Selections remembered across page refreshes and sessions
   - Graceful fallback to defaults if localStorage unavailable
   - Handles variant list changes (filters to valid variants only)
+- [2026-01-28] **Window-Based Virtual Scroll**
+  - Converted from `useVirtualizer` to `useWindowVirtualizer`
+  - Header now scrolls away naturally with page content
+  - Better mobile UX with more screen real estate for photos
+  - Added `scrollMargin` tracking for correct item positioning
 
 ## Test Results
 

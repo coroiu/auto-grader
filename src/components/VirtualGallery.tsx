@@ -3,7 +3,7 @@
 import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type { Photo } from '@/lib/processing';
 
@@ -77,6 +77,7 @@ function getPhotoRowHeight(containerWidth: number, columns: number): number {
 export function VirtualGallery({ photos }: VirtualGalleryProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [scrollMargin, setScrollMargin] = useState(0);
 
   // Responsive column count
   const isLarge = useMediaQuery('(min-width: 1280px)');
@@ -85,22 +86,26 @@ export function VirtualGallery({ photos }: VirtualGalleryProps) {
 
   const columns = isLarge ? 5 : isDesktop ? 4 : isTablet ? 3 : 2;
 
-  // Measure container width
+  // Measure container width and scroll margin
   useEffect(() => {
     if (!parentRef.current) return;
 
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) {
-        setContainerWidth(entry.contentRect.width);
+    const updateMeasurements = () => {
+      if (parentRef.current) {
+        setContainerWidth(parentRef.current.clientWidth);
+        setScrollMargin(parentRef.current.offsetTop);
       }
-    });
+    };
 
+    const observer = new ResizeObserver(updateMeasurements);
     observer.observe(parentRef.current);
-    // Set initial width
-    setContainerWidth(parentRef.current.clientWidth);
+    updateMeasurements();
 
-    return () => observer.disconnect();
+    window.addEventListener('resize', updateMeasurements);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateMeasurements);
+    };
   }, []);
 
   const rows = useMemo(
@@ -118,11 +123,11 @@ export function VirtualGallery({ photos }: VirtualGalleryProps) {
     [containerWidth, columns, rows]
   );
 
-  const virtualizer = useVirtualizer({
+  const virtualizer = useWindowVirtualizer({
     count: rows.length,
-    getScrollElement: () => parentRef.current,
     estimateSize: getRowHeight,
-    overscan: 3,
+    overscan: 5,
+    scrollMargin,
   });
 
   // Force remeasure when dimensions change
@@ -137,18 +142,14 @@ export function VirtualGallery({ photos }: VirtualGalleryProps) {
   // Show loading placeholder until we have a valid width
   if (containerWidth === 0) {
     return (
-      <div ref={parentRef} className="h-[calc(100vh-12rem)] overflow-auto">
+      <div ref={parentRef} className="min-h-[50vh]">
         <div className="animate-pulse text-gray-500">Loading gallery...</div>
       </div>
     );
   }
 
   return (
-    <div
-      ref={parentRef}
-      className="h-[calc(100vh-12rem)] overflow-auto"
-      style={{ contain: 'strict' }}
-    >
+    <div ref={parentRef}>
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
@@ -167,7 +168,7 @@ export function VirtualGallery({ photos }: VirtualGalleryProps) {
                 left: 0,
                 width: '100%',
                 height: `${virtualRow.size}px`,
-                transform: `translateY(${virtualRow.start}px)`,
+                transform: `translateY(${virtualRow.start - scrollMargin}px)`,
               }}
             >
               {row.type === 'header' ? (
