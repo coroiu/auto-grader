@@ -66,12 +66,6 @@ function filmicExposureCurve(srgb: number, exposure: number): number {
   const scale = lum > 0.001 ? lumMapped / lum : 1.0;
   exposed *= scale;
 
-  // Shadow toe for negative exposure
-  if (exposure < 0) {
-    const toe = 0.02 * Math.abs(exposure);
-    exposed = exposed * (1.0 - toe) + toe;
-  }
-
   // Clamp
   exposed = Math.max(0, Math.min(1, exposed));
 

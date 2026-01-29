@@ -1,7 +1,7 @@
 # Filmic Exposure Tone Mapping
 
 **Date**: 2026-01-29
-**Status**: Accepted
+**Status**: Accepted (Updated 2026-01-29)
 
 ## Context
 
@@ -228,3 +228,68 @@ Test the following scenarios:
 - [Lightroom Tone Control Adjustment - Adobe Help](https://helpx.adobe.com/lightroom-classic/help/tone-control-adjustment.html)
 - Related decision: [2026-01-28-browser-based-image-editing.md](2026-01-28-browser-based-image-editing.md)
 - Related research: [../research/findings/2026-01-28-webgl-image-processing.md](../../.research/findings/2026-01-28-webgl-image-processing.md)
+
+## Updates
+
+### 2026-01-29: Removed Incorrect Shadow Toe Behavior
+
+**Problem Identified**: The initial implementation included a "shadow toe" that lifted blacks toward gray when reducing exposure:
+
+```glsl
+// INCORRECT - Removed
+if (exposure < 0.0) {
+  float toe = 0.02 * abs(exposure);
+  linear = linear * (1.0 - toe) + toe;
+}
+```
+
+This formula **lifts** all values toward gray instead of darkening them:
+- At -2 EV, toe = 0.04
+- Black (0.0) becomes: `0 * 0.96 + 0.04 = 0.04` (lifted to gray)
+- Dark shadow (0.1) becomes: `0.1 * 0.96 + 0.04 = 0.136` (lighter, not darker!)
+
+**Root Cause**: Misguided attempt to "protect shadows from crushing." In reality, exposure adjustment should be **asymmetric**:
+- **Positive exposure** (+EV): Need highlight compression (soft shoulder) to prevent clipping to white ✓
+- **Negative exposure** (-EV): Should let values darken naturally toward black ✓
+
+Professional tools like Lightroom and Camera Raw allow shadows to darken naturally when underexposing. The exposure slider's job is to shift the overall brightness proportionally. Shadow protection is **not** part of standard exposure behavior.
+
+**Solution**: Removed the shadow toe curve entirely. The corrected algorithm:
+
+```glsl
+vec3 filmicExposure(vec3 color, float exposure) {
+  vec3 linear = srgbToLinear(color);
+  linear *= pow(2.0, exposure);  // Exposure multiplier
+
+  // Luminance-based highlight compression (ONLY for bright values)
+  float lum = dot(linear, vec3(0.2126, 0.7152, 0.0722));
+  float threshold = 0.8;
+  float knee = 0.5;
+  float lumMapped = lum;
+  if (lum > threshold) {
+    float x = (lum - threshold) / (1.0 - threshold);
+    lumMapped = threshold + (1.0 - threshold) * (1.0 - exp(-knee * x));
+  }
+
+  // Scale RGB by luminance ratio to preserve color
+  float scale = lum > 0.001 ? lumMapped / lum : 1.0;
+  linear *= scale;
+
+  // REMOVED: Shadow toe - let shadows darken naturally
+
+  return linearToSrgb(clamp(linear, 0.0, 1.0));
+}
+```
+
+**Files Changed**:
+- `src/lib/webgl/ImageGrader.ts` (lines 159-163): Removed shadow toe from fragment shader
+- `src/app/api/photos/[name]/export/route.ts` (lines 69-73): Removed shadow toe from FFmpeg export
+
+**Result**:
+- Positive exposure still has smooth highlight roll-off (correct)
+- Negative exposure now darkens shadows naturally toward black (correct)
+- Matches professional tool behavior (Lightroom, ACR)
+
+**References**:
+- [Lightroom Exposure vs Brightness - Lightroom Killer Tips](https://www.lightroomkillertips.com/lightroom-exposure-vs-brightness/)
+- [Tone Control Adjustment - Adobe Lightroom](https://helpx.adobe.com/lightroom-classic/help/tone-control-adjustment.html)

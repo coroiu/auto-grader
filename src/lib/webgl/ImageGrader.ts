@@ -156,12 +156,6 @@ export class ImageGrader {
         float scale = lum > 0.001 ? lumMapped / lum : 1.0;
         linear *= scale;
 
-        // Shadow toe for negative exposure: lift blacks to prevent crushing
-        if (exposure < 0.0) {
-          float toe = 0.02 * abs(exposure);
-          linear = linear * (1.0 - toe) + toe;
-        }
-
         return linearToSrgb(clamp(linear, 0.0, 1.0));
       }
 
