@@ -103,15 +103,24 @@ None currently.
 
 ## Recently Completed
 
+- [2026-01-29] **Midtone-Biased Exposure with Gaussian Weighting**
+  - Improved highlight preservation during negative exposure adjustments
+  - Implemented Gaussian bell curve centered on midtones (0.5)
+  - Weights: 1.0 at midtones, 0.6 minimum at extremes (highlights/shadows)
+  - At -2 EV: highlights (0.9) now become 0.28 vs 0.225 before (24% lighter)
+  - Increased FFmpeg curve sampling from 17 to 33 points for smoother Gaussian
+  - Matches Lightroom's "exposure slider is really a midtones slider" behavior
+  - See `.planning/decisions/2026-01-29-filmic-exposure-tone-mapping.md` (latest update)
+  - Modified files:
+    - `src/lib/webgl/ImageGrader.ts` - Added Gaussian weighting before exposure
+    - `src/app/api/photos/[name]/export/route.ts` - Updated curve with Gaussian
+
 - [2026-01-29] **Filmic Exposure Tone Mapping**
   - Replaced simple linear exposure with professional filmic tone mapping
   - Luminance-based highlight roll-off with soft shoulder curve
-  - Shadow protection (toe curve) for negative exposure adjustments
-  - FFmpeg export updated with 17-point curves filter approximation
+  - ~~Shadow protection (toe curve) for negative exposure adjustments~~ (removed - was incorrect)
+  - FFmpeg export updated with curves filter approximation
   - See `.planning/decisions/2026-01-29-filmic-exposure-tone-mapping.md`
-  - Modified files:
-    - `src/lib/webgl/ImageGrader.ts` - WebGL shader with filmic curve
-    - `src/app/api/photos/[name]/export/route.ts` - FFmpeg curves filter
 
 - [2026-01-28] **Browser-Based Image Editor** (WebGL exposure + LUT editing)
   - See `.planning/decisions/2026-01-28-browser-based-image-editing.md`
