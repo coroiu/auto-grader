@@ -251,6 +251,13 @@ export function PhotoComparison({ photo }: PhotoComparisonProps) {
       <div className="mt-8 pt-6 border-t border-gray-800">
         <h3 className="text-sm font-medium text-gray-400 mb-3">Download</h3>
         <div className="flex flex-wrap gap-3">
+          <a
+            href={`/api/photos/${encodeURIComponent(photo.name)}/raw`}
+            download
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm text-white font-medium transition-colors"
+          >
+            RAW Original
+          </a>
           {photo.variants.map((variant) => (
             <a
               key={variant.name}

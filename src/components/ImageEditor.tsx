@@ -331,6 +331,13 @@ export function ImageEditor({
               Export Full Resolution
             </button>
           )}
+          <a
+            href={`/api/photos/${encodeURIComponent(photoName)}/raw`}
+            download
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 transition-colors inline-block"
+          >
+            Download RAW Original
+          </a>
           <button
             onClick={clearSession}
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 transition-colors"
