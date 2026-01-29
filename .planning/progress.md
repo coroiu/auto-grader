@@ -1,6 +1,6 @@
 # Project Progress
 
-**Last Updated**: 2026-01-28
+**Last Updated**: 2026-01-29
 
 ## Current Status
 
@@ -102,6 +102,16 @@ All major known issues have been addressed:
 None currently.
 
 ## Recently Completed
+
+- [2026-01-29] **Filmic Exposure Tone Mapping**
+  - Replaced simple linear exposure with professional filmic tone mapping
+  - Luminance-based highlight roll-off with soft shoulder curve
+  - Shadow protection (toe curve) for negative exposure adjustments
+  - FFmpeg export updated with 17-point curves filter approximation
+  - See `.planning/decisions/2026-01-29-filmic-exposure-tone-mapping.md`
+  - Modified files:
+    - `src/lib/webgl/ImageGrader.ts` - WebGL shader with filmic curve
+    - `src/app/api/photos/[name]/export/route.ts` - FFmpeg curves filter
 
 - [2026-01-28] **Browser-Based Image Editor** (WebGL exposure + LUT editing)
   - See `.planning/decisions/2026-01-28-browser-based-image-editing.md`

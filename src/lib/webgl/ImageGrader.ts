@@ -128,18 +128,50 @@ export class ImageGrader {
         );
       }
 
+      // Filmic exposure adjustment with highlight roll-off and shadow protection
+      // Based on "linear + highlight roll-off" tone mapping for photography
+      vec3 filmicExposure(vec3 color, float exposure) {
+        // Convert to linear space for proper exposure math
+        vec3 linear = srgbToLinear(color);
+
+        // Apply exposure multiplier (2^stops formula)
+        linear *= pow(2.0, exposure);
+
+        // Luminance-based highlight compression
+        // Using Rec. 709 luma coefficients
+        float lum = dot(linear, vec3(0.2126, 0.7152, 0.0722));
+
+        // Soft shoulder curve parameters
+        float threshold = 0.8;  // Start compression at 80% brightness
+        float knee = 0.5;       // Compression aggressiveness
+
+        float lumMapped = lum;
+        if (lum > threshold) {
+          // Exponential soft shoulder: smooth approach to 1.0
+          float x = (lum - threshold) / (1.0 - threshold);
+          lumMapped = threshold + (1.0 - threshold) * (1.0 - exp(-knee * x));
+        }
+
+        // Scale RGB by luminance ratio to preserve color/saturation
+        float scale = lum > 0.001 ? lumMapped / lum : 1.0;
+        linear *= scale;
+
+        // Shadow toe for negative exposure: lift blacks to prevent crushing
+        if (exposure < 0.0) {
+          float toe = 0.02 * abs(exposure);
+          linear = linear * (1.0 - toe) + toe;
+        }
+
+        return linearToSrgb(clamp(linear, 0.0, 1.0));
+      }
+
       void main() {
         // Sample source image (sRGB from darktable)
         vec3 color = texture(uImage, vTexCoord).rgb;
 
-        // Apply exposure adjustment
+        // Apply filmic exposure adjustment
         if (uExposure != 0.0) {
-          // Convert to linear for proper exposure math
-          vec3 linear = srgbToLinear(color);
-          // Apply exposure in stops
-          linear *= pow(2.0, uExposure);
-          // Convert back to sRGB
-          color = linearToSrgb(clamp(linear, 0.0, 1.0));
+          color = filmicExposure(color, uExposure);
         }
 
         // Clamp to valid range before LUT lookup
