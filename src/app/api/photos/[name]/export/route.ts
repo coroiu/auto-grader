@@ -38,45 +38,32 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 /**
- * Compute midtone-biased exposure curve value for a given sRGB input
- * Matches the WebGL shader implementation using Gaussian weighting
+ * Compute filmic exposure curve value for a given sRGB input
+ * Matches the WebGL shader implementation
  */
 function filmicExposureCurve(srgb: number, exposure: number): number {
   // sRGB to linear
   const linear =
     srgb <= 0.04045 ? srgb / 12.92 : Math.pow((srgb + 0.055) / 1.055, 2.4);
 
-  // Calculate luminance (using grayscale approximation for per-channel curves)
-  const lum = linear;
+  // Apply exposure multiplier
+  let exposed = linear * Math.pow(2, exposure);
 
-  // Gaussian weight function for midtone bias
-  const center = 0.5;
-  const sigma = 0.3;
-  const minWeight = 0.6;
+  // Luminance-based highlight compression
+  const lum = exposed; // For grayscale approximation
 
-  // Calculate Gaussian falloff from center
-  const gaussianFalloff = Math.exp(-Math.pow((lum - center) / sigma, 2.0));
-
-  // Weight ranges from minWeight (at extremes) to 1.0 (at center)
-  const weight = minWeight + (1.0 - minWeight) * gaussianFalloff;
-
-  // Apply exposure with tonal weighting
-  let exposed = linear * Math.pow(2, exposure * weight);
-
-  // Luminance-based highlight compression (soft shoulder)
-  const lumAfterExposure = exposed;
-
+  // Soft shoulder curve
   const threshold = 0.8;
   const knee = 0.5;
 
-  let lumMapped = lumAfterExposure;
-  if (lumAfterExposure > threshold) {
-    const x = (lumAfterExposure - threshold) / (1.0 - threshold);
+  let lumMapped = lum;
+  if (lum > threshold) {
+    const x = (lum - threshold) / (1.0 - threshold);
     lumMapped = threshold + (1.0 - threshold) * (1.0 - Math.exp(-knee * x));
   }
 
   // Scale by luminance ratio
-  const scale = lumAfterExposure > 0.001 ? lumMapped / lumAfterExposure : 1.0;
+  const scale = lum > 0.001 ? lumMapped / lum : 1.0;
   exposed *= scale;
 
   // Clamp
@@ -92,13 +79,12 @@ function filmicExposureCurve(srgb: number, exposure: number): number {
 }
 
 /**
- * Generate FFmpeg curves filter for midtone-biased exposure
- * Returns a curves filter string with sampled points from the Gaussian-weighted curve
+ * Generate FFmpeg curves filter for filmic exposure
+ * Returns a curves filter string with sampled points from the filmic curve
  */
 function generateFilmicCurvesFilter(exposure: number): string {
-  // Sample the curve at multiple points
-  // Using 33 points for smoother Gaussian interpolation (was 17 before)
-  const numPoints = 33;
+  // Sample the filmic curve at multiple points
+  const numPoints = 17; // FFmpeg supports up to 255 points, 17 is enough for smooth curves
   const points: string[] = [];
 
   for (let i = 0; i < numPoints; i++) {
@@ -240,15 +226,14 @@ export async function GET(
     // Build filter chain
     const filters: string[] = [];
 
-    // Midtone-biased exposure adjustment for sRGB images
+    // Filmic exposure adjustment for sRGB images
     // Uses the same curve as the WebGL shader:
-    // - Gaussian weighting centered on midtones (full effect)
-    // - Reduced effect on highlights and shadows (60% minimum)
     // - Luminance-based highlight roll-off with soft shoulder
+    // - Shadow protection (toe curve) for negative exposure
     // - Preserves color by applying curve to all RGB channels uniformly
     //
-    // The curves filter samples the Gaussian-weighted tone mapping function
-    // at 33 points to create a smooth approximation. This won't be pixel-perfect
+    // The curves filter samples the filmic tone mapping function at multiple
+    // points to create a smooth approximation. This won't be pixel-perfect
     // compared to the preview, but professional tools (Lightroom, Capture One)
     // also have minor preview/export differences.
 

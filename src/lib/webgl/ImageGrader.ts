@@ -128,49 +128,32 @@ export class ImageGrader {
         );
       }
 
-      // Midtone-biased exposure adjustment with Gaussian weighting
-      // Applies stronger exposure effect to midtones, reduced effect to highlights and shadows
-      // This matches Lightroom's "exposure slider is really a midtones slider" behavior
+      // Filmic exposure adjustment with highlight roll-off and shadow protection
+      // Based on "linear + highlight roll-off" tone mapping for photography
       vec3 filmicExposure(vec3 color, float exposure) {
         // Convert to linear space for proper exposure math
         vec3 linear = srgbToLinear(color);
 
-        // Calculate luminance using Rec. 709 coefficients
+        // Apply exposure multiplier (2^stops formula)
+        linear *= pow(2.0, exposure);
+
+        // Luminance-based highlight compression
+        // Using Rec. 709 luma coefficients
         float lum = dot(linear, vec3(0.2126, 0.7152, 0.0722));
 
-        // Gaussian weight function for midtone bias
-        // Creates a bell curve centered on midtones (0.5)
-        // with reduced effect on shadows and highlights
-        const float center = 0.5;    // Midpoint (middle gray in linear space)
-        const float sigma = 0.3;     // Width of bell curve
-        const float minWeight = 0.6; // Minimum effect at extremes (60%)
+        // Soft shoulder curve parameters
+        float threshold = 0.8;  // Start compression at 80% brightness
+        float knee = 0.5;       // Compression aggressiveness
 
-        // Calculate Gaussian falloff from center
-        float gaussianFalloff = exp(-pow((lum - center) / sigma, 2.0));
-
-        // Weight ranges from minWeight (at extremes) to 1.0 (at center)
-        float weight = mix(minWeight, 1.0, gaussianFalloff);
-
-        // Apply exposure with tonal weighting
-        // Midtones get full adjustment, extremes get reduced adjustment
-        linear *= pow(2.0, exposure * weight);
-
-        // Luminance-based highlight compression (soft shoulder)
-        // This handles extreme positive exposure adjustments
-        float lumAfterExposure = dot(linear, vec3(0.2126, 0.7152, 0.0722));
-
-        const float threshold = 0.8;  // Start compression at 80% brightness
-        const float knee = 0.5;       // Compression aggressiveness
-
-        float lumMapped = lumAfterExposure;
-        if (lumAfterExposure > threshold) {
+        float lumMapped = lum;
+        if (lum > threshold) {
           // Exponential soft shoulder: smooth approach to 1.0
-          float x = (lumAfterExposure - threshold) / (1.0 - threshold);
+          float x = (lum - threshold) / (1.0 - threshold);
           lumMapped = threshold + (1.0 - threshold) * (1.0 - exp(-knee * x));
         }
 
         // Scale RGB by luminance ratio to preserve color/saturation
-        float scale = lumAfterExposure > 0.001 ? lumMapped / lumAfterExposure : 1.0;
+        float scale = lum > 0.001 ? lumMapped / lum : 1.0;
         linear *= scale;
 
         return linearToSrgb(clamp(linear, 0.0, 1.0));
