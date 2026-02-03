@@ -1,6 +1,6 @@
 # Project Progress
 
-**Last Updated**: 2026-01-29
+**Last Updated**: 2026-02-03
 
 ## Current Status
 
@@ -100,6 +100,20 @@ All major known issues have been addressed:
 ## In Progress
 
 None currently.
+
+## Latest Changes
+
+- [2026-02-03] **White Balance Implementation**
+  - Added Kelvin-based temperature control (2000K-10000K) to WebGL editor
+  - Added tint control (-1 to +1, green to magenta) for fine-tuning
+  - Implemented Tanner Helland's Kelvin-to-RGB algorithm in shader
+  - White balance applied before exposure in processing pipeline (WB → Exposure → LUT)
+  - Temperature and tint settings persist in localStorage per-photo
+  - Included in full-resolution canvas exports
+  - Modified files:
+    - `src/lib/webgl/ImageGrader.ts` - Kelvin-to-RGB shader functions, uniforms, API methods
+    - `src/components/ImageEditor.tsx` - Temperature/tint sliders and state management
+    - `src/app/photos/[name]/edit/EditPageClient.tsx` - Export with WB settings
 
 ## Recently Completed
 

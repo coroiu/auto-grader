@@ -24,7 +24,7 @@ export function EditPageClient({ photoName, luts }: EditPageClientProps) {
   const fullResUrl = `/api/photos/${encodeURIComponent(photoName)}/full-tiff`;
 
   const handleExport = useCallback(
-    async (settings: { exposure: number; lut: string | null }) => {
+    async (settings: { exposure: number; lut: string | null; temperature: number; tint: number }) => {
       setIsExporting(true);
       setExportError(null);
       setExportProgress('Creating canvas...');
@@ -43,6 +43,11 @@ export function EditPageClient({ photoName, luts }: EditPageClientProps) {
         try {
           // Load the full-res TIFF
           await grader.loadImage(fullResUrl);
+
+          // Apply white balance
+          setExportProgress('Applying white balance...');
+          grader.setTemperature(settings.temperature);
+          grader.setTint(settings.tint);
 
           // Apply exposure
           setExportProgress('Applying exposure...');

@@ -17,6 +17,8 @@ interface UniformLocations {
   uExposure: WebGLUniformLocation | null;
   uLUTSize: WebGLUniformLocation | null;
   uLUTEnabled: WebGLUniformLocation | null;
+  uTemperature: WebGLUniformLocation | null;
+  uTint: WebGLUniformLocation | null;
 }
 
 export class ImageGrader {
@@ -35,6 +37,8 @@ export class ImageGrader {
   // Current state
   private exposure: number = 0;
   private lutEnabled: boolean = true;
+  private temperature: number = 6500; // Kelvin (2000-10000)
+  private tint: number = 0; // -1 to 1 (green to magenta)
 
   // Extension support
   private hasFloatLinear: boolean = false;
@@ -71,6 +75,8 @@ export class ImageGrader {
       uExposure: gl.getUniformLocation(this.program, 'uExposure'),
       uLUTSize: gl.getUniformLocation(this.program, 'uLUTSize'),
       uLUTEnabled: gl.getUniformLocation(this.program, 'uLUTEnabled'),
+      uTemperature: gl.getUniformLocation(this.program, 'uTemperature'),
+      uTint: gl.getUniformLocation(this.program, 'uTint'),
     };
 
     // Create empty VAO for fullscreen triangle (no attributes needed)
@@ -106,9 +112,11 @@ export class ImageGrader {
 
       uniform sampler2D uImage;
       uniform sampler3D uLUT;
-      uniform float uExposure;   // In stops (EV)
-      uniform float uLUTSize;    // LUT dimension (e.g., 33.0)
-      uniform bool uLUTEnabled;  // Toggle LUT on/off
+      uniform float uExposure;    // In stops (EV)
+      uniform float uLUTSize;     // LUT dimension (e.g., 33.0)
+      uniform bool uLUTEnabled;   // Toggle LUT on/off
+      uniform float uTemperature; // Kelvin (2000-10000)
+      uniform float uTint;        // -1 to 1 (green to magenta)
 
       // sRGB to linear conversion
       vec3 srgbToLinear(vec3 srgb) {
@@ -126,6 +134,68 @@ export class ImageGrader {
           1.055 * pow(linear, vec3(1.0 / 2.4)) - 0.055,
           step(0.0031308, linear)
         );
+      }
+
+      // Convert Kelvin temperature to RGB multiplier
+      // Based on Tanner Helland's algorithm
+      // https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
+      vec3 kelvinToRGB(float kelvin) {
+        float temp = kelvin / 100.0;
+        vec3 rgb;
+
+        // Red channel
+        if (temp <= 66.0) {
+          rgb.r = 1.0;
+        } else {
+          rgb.r = temp - 60.0;
+          rgb.r = 329.698727446 * pow(rgb.r, -0.1332047592);
+          rgb.r = clamp(rgb.r / 255.0, 0.0, 1.0);
+        }
+
+        // Green channel
+        if (temp <= 66.0) {
+          rgb.g = temp;
+          rgb.g = 99.4708025861 * log(rgb.g) - 161.1195681661;
+        } else {
+          rgb.g = temp - 60.0;
+          rgb.g = 288.1221695283 * pow(rgb.g, -0.0755148492);
+        }
+        rgb.g = clamp(rgb.g / 255.0, 0.0, 1.0);
+
+        // Blue channel
+        if (temp >= 66.0) {
+          rgb.b = 1.0;
+        } else if (temp <= 19.0) {
+          rgb.b = 0.0;
+        } else {
+          rgb.b = temp - 10.0;
+          rgb.b = 138.5177312231 * log(rgb.b) - 305.0447927307;
+          rgb.b = clamp(rgb.b / 255.0, 0.0, 1.0);
+        }
+
+        return rgb;
+      }
+
+      // Apply white balance: Kelvin temperature + tint
+      vec3 applyWhiteBalance(vec3 color, float kelvin, float tint) {
+        // Convert Kelvin to RGB multiplier
+        vec3 tempMultiplier = kelvinToRGB(kelvin);
+
+        // Normalize to preserve brightness (divide by reference 6500K)
+        vec3 reference = kelvinToRGB(6500.0);
+        tempMultiplier = tempMultiplier / reference;
+
+        // Apply temperature
+        vec3 result = color * tempMultiplier;
+
+        // Apply tint (green-magenta shift)
+        float tintGreen = 1.0 - tint * 0.3;
+        float tintMagenta = 1.0 + tint * 0.3;
+        result.r *= tintMagenta;
+        result.g *= tintGreen;
+        result.b *= tintMagenta;
+
+        return result;
       }
 
       // Filmic exposure adjustment with highlight roll-off and shadow protection
@@ -162,6 +232,11 @@ export class ImageGrader {
       void main() {
         // Sample source image (sRGB from darktable)
         vec3 color = texture(uImage, vTexCoord).rgb;
+
+        // Apply white balance first (before exposure)
+        if (uTemperature != 6500.0 || uTint != 0.0) {
+          color = applyWhiteBalance(color, uTemperature, uTint);
+        }
 
         // Apply filmic exposure adjustment
         if (uExposure != 0.0) {
@@ -405,6 +480,36 @@ export class ImageGrader {
   }
 
   /**
+   * Set white balance temperature in Kelvin
+   */
+  setTemperature(kelvin: number): void {
+    this.temperature = Math.max(2000, Math.min(10000, kelvin));
+    this.render();
+  }
+
+  /**
+   * Get current temperature value
+   */
+  getTemperature(): number {
+    return this.temperature;
+  }
+
+  /**
+   * Set white balance tint (-1 to 1, green to magenta)
+   */
+  setTint(value: number): void {
+    this.tint = Math.max(-1, Math.min(1, value));
+    this.render();
+  }
+
+  /**
+   * Get current tint value
+   */
+  getTint(): number {
+    return this.tint;
+  }
+
+  /**
    * Toggle LUT on/off (for A/B comparison)
    */
   setLUTEnabled(enabled: boolean): void {
@@ -458,6 +563,8 @@ export class ImageGrader {
     gl.uniform1f(this.uniforms.uExposure, this.exposure);
     gl.uniform1f(this.uniforms.uLUTSize, this.lutSize);
     gl.uniform1i(this.uniforms.uLUTEnabled, this.lutEnabled ? 1 : 0);
+    gl.uniform1f(this.uniforms.uTemperature, this.temperature);
+    gl.uniform1f(this.uniforms.uTint, this.tint);
 
     // Draw fullscreen triangle
     gl.drawArrays(gl.TRIANGLES, 0, 3);

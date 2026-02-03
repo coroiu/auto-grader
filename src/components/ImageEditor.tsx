@@ -12,6 +12,8 @@ interface EditingSession {
   exposure: number;
   selectedLut: string | null;
   lutEnabled: boolean;
+  temperature: number;
+  tint: number;
   lastModified: string;
 }
 
@@ -19,7 +21,7 @@ interface ImageEditorProps {
   photoName: string;
   previewUrl: string;
   luts: LutInfo[];
-  onExport?: (settings: { exposure: number; lut: string | null }) => void;
+  onExport?: (settings: { exposure: number; lut: string | null; temperature: number; tint: number }) => void;
 }
 
 export function ImageEditor({
@@ -39,6 +41,8 @@ export function ImageEditor({
   const [selectedLut, setSelectedLut] = useState<string | null>(null);
   const [lutEnabled, setLutEnabled] = useState(true);
   const [currentLutInfo, setCurrentLutInfo] = useState<CubeLUT | null>(null);
+  const [temperature, setTemperature] = useState(6500);
+  const [tint, setTint] = useState(0);
 
   // LocalStorage key for this photo's editing session
   const storageKey = `auto-grader:edit:${photoName}`;
@@ -52,6 +56,8 @@ export function ImageEditor({
         setExposure(session.exposure);
         setSelectedLut(session.selectedLut);
         setLutEnabled(session.lutEnabled);
+        setTemperature(session.temperature ?? 6500);
+        setTint(session.tint ?? 0);
       }
     } catch {
       // Ignore localStorage errors
@@ -66,6 +72,8 @@ export function ImageEditor({
           exposure,
           selectedLut,
           lutEnabled,
+          temperature,
+          tint,
           lastModified: new Date().toISOString(),
         };
         localStorage.setItem(storageKey, JSON.stringify(session));
@@ -75,7 +83,7 @@ export function ImageEditor({
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [exposure, selectedLut, lutEnabled, storageKey]);
+  }, [exposure, selectedLut, lutEnabled, temperature, tint, storageKey]);
 
   // Initialize WebGL and load image
   useEffect(() => {
@@ -168,6 +176,38 @@ export function ImageEditor({
     graderRef.current?.setExposure(0);
   }, []);
 
+  // Update temperature in real-time
+  const handleTemperatureChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = parseFloat(e.target.value);
+      setTemperature(value);
+      graderRef.current?.setTemperature(value);
+    },
+    []
+  );
+
+  // Reset temperature to 6500K
+  const resetTemperature = useCallback(() => {
+    setTemperature(6500);
+    graderRef.current?.setTemperature(6500);
+  }, []);
+
+  // Update tint in real-time
+  const handleTintChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = parseFloat(e.target.value);
+      setTint(value);
+      graderRef.current?.setTint(value);
+    },
+    []
+  );
+
+  // Reset tint to 0
+  const resetTint = useCallback(() => {
+    setTint(0);
+    graderRef.current?.setTint(0);
+  }, []);
+
   // Toggle LUT
   const toggleLut = useCallback(() => {
     setLutEnabled((prev) => {
@@ -186,17 +226,21 @@ export function ImageEditor({
 
   // Handle export
   const handleExport = useCallback(() => {
-    onExport?.({ exposure, lut: selectedLut });
-  }, [exposure, selectedLut, onExport]);
+    onExport?.({ exposure, lut: selectedLut, temperature, tint });
+  }, [exposure, selectedLut, temperature, tint, onExport]);
 
   // Clear session
   const clearSession = useCallback(() => {
     setExposure(0);
     setSelectedLut(null);
     setLutEnabled(true);
+    setTemperature(6500);
+    setTint(0);
     graderRef.current?.setExposure(0);
     graderRef.current?.clearLUT();
     graderRef.current?.setLUTEnabled(true);
+    graderRef.current?.setTemperature(6500);
+    graderRef.current?.setTint(0);
     setCurrentLutInfo(null);
     try {
       localStorage.removeItem(storageKey);
@@ -265,6 +309,75 @@ export function ImageEditor({
             <span>-3 EV</span>
             <span>0</span>
             <span>+3 EV</span>
+          </div>
+        </div>
+
+        {/* White Balance - Temperature slider */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-medium text-gray-300">
+              Temperature
+            </label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400 font-mono w-16 text-right">
+                {temperature}K
+              </span>
+              <button
+                onClick={resetTemperature}
+                className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+          <input
+            type="range"
+            min="2000"
+            max="10000"
+            step="50"
+            value={temperature}
+            onChange={handleTemperatureChange}
+            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>Warm (2000K)</span>
+            <span>Daylight (6500K)</span>
+            <span>Cool (10000K)</span>
+          </div>
+        </div>
+
+        {/* White Balance - Tint slider */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-medium text-gray-300">
+              Tint
+            </label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400 font-mono w-16 text-right">
+                {tint > 0 ? '+' : ''}
+                {tint.toFixed(2)}
+              </span>
+              <button
+                onClick={resetTint}
+                className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+          <input
+            type="range"
+            min="-1"
+            max="1"
+            step="0.05"
+            value={tint}
+            onChange={handleTintChange}
+            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>Green (-1.0)</span>
+            <span>Neutral (0)</span>
+            <span>Magenta (+1.0)</span>
           </div>
         </div>
 
