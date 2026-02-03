@@ -1,10 +1,13 @@
 import chokidar from 'chokidar';
 import path from 'path';
+import { promises as fs } from 'fs';
 import { config } from './config';
 import { processingQueue } from './queue';
-import { scanForPendingWork } from './state';
+import { scanForPendingWork, getPhotoOutputDir } from './state';
 import { cleanupStaleMarkers } from './pipeline';
 import { initPhotoStore, stopPhotoStore, refreshPhotoStore } from './photoStore';
+import { updateMetadata, needsWBUpdate } from './metadata';
+import type { PhotoMetadata } from './state';
 
 let watcher: chokidar.FSWatcher | null = null;
 let cleanupInterval: NodeJS.Timeout | null = null;
@@ -120,12 +123,60 @@ export async function stopWatcher(): Promise<void> {
 }
 
 /**
+ * Re-extract metadata from RAW files for existing photos missing WB fields
+ */
+async function reextractMetadataForExistingPhotos(): Promise<number> {
+  let updatedCount = 0;
+
+  try {
+    const inboxFiles = await fs.readdir(config.inboxDir);
+
+    for (const file of inboxFiles) {
+      const ext = path.extname(file);
+      if (!config.rawExtensions.includes(ext)) continue;
+
+      const photoName = path.basename(file, ext);
+      const outputDir = getPhotoOutputDir(photoName);
+      const metadataPath = path.join(outputDir, config.metadataFile);
+      const rawPath = path.join(config.inboxDir, file);
+
+      // Check if metadata.json exists
+      try {
+        const content = await fs.readFile(metadataPath, 'utf-8');
+        const metadata: PhotoMetadata = JSON.parse(content);
+
+        // Check if WB fields are missing
+        if (needsWBUpdate(metadata)) {
+          console.log(`[WATCHER] Updating metadata for ${photoName}`);
+          await updateMetadata(rawPath, metadataPath);
+          updatedCount++;
+        }
+      } catch {
+        // metadata.json doesn't exist or is malformed, skip
+      }
+    }
+  } catch (err) {
+    console.error('[WATCHER] Metadata re-extraction error:', err);
+  }
+
+  if (updatedCount > 0) {
+    console.log(`[WATCHER] Updated metadata for ${updatedCount} photos`);
+    await refreshPhotoStore(); // Reload photos with new metadata
+  }
+
+  return updatedCount;
+}
+
+/**
  * Trigger a rescan for pending work (e.g., after adding new LUTs)
  */
 export async function rescan(): Promise<number> {
   console.log('[WATCHER] Rescanning for pending work...');
 
-  // Refresh the photo store to pick up any changes (e.g., new LUTs)
+  // Re-extract metadata for photos missing WB fields
+  await reextractMetadataForExistingPhotos();
+
+  // Refresh the photo store to pick up any changes (e.g., new LUTs, updated metadata)
   await refreshPhotoStore();
 
   const pendingWork = await scanForPendingWork();

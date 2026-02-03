@@ -56,7 +56,7 @@ export default async function EditPage({ params }: PageProps) {
         )}
       </header>
 
-      <EditPageClient photoName={photo.name} luts={luts} />
+      <EditPageClient photoName={photo.name} luts={luts} metadata={photo.metadata} />
     </main>
   );
 }

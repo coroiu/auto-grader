@@ -3,6 +3,7 @@
 import { useCallback, useState, useRef } from 'react';
 import { ImageEditor } from '@/components/ImageEditor';
 import { ImageGrader } from '@/lib/webgl';
+import type { PhotoMetadata } from '@/lib/processing/state';
 
 interface LutInfo {
   name: string;
@@ -12,9 +13,10 @@ interface LutInfo {
 interface EditPageClientProps {
   photoName: string;
   luts: LutInfo[];
+  metadata: PhotoMetadata | null;
 }
 
-export function EditPageClient({ photoName, luts }: EditPageClientProps) {
+export function EditPageClient({ photoName, luts, metadata }: EditPageClientProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState('');
   const [exportError, setExportError] = useState<string | null>(null);
@@ -118,6 +120,7 @@ export function EditPageClient({ photoName, luts }: EditPageClientProps) {
         photoName={photoName}
         previewUrl={previewUrl}
         luts={luts}
+        metadata={metadata}
         onExport={handleExport}
       />
 

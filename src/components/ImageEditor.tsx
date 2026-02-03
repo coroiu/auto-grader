@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { ImageGrader, CubeLUT } from '@/lib/webgl';
+import type { PhotoMetadata } from '@/lib/processing/state';
 
 interface LutInfo {
   name: string;
@@ -21,6 +22,7 @@ interface ImageEditorProps {
   photoName: string;
   previewUrl: string;
   luts: LutInfo[];
+  metadata?: PhotoMetadata | null;
   onExport?: (settings: { exposure: number; lut: string | null; temperature: number; tint: number }) => void;
 }
 
@@ -28,6 +30,7 @@ export function ImageEditor({
   photoName,
   previewUrl,
   luts,
+  metadata,
   onExport,
 }: ImageEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -37,12 +40,23 @@ export function ImageEditor({
   const [loadingMessage, setLoadingMessage] = useState('Initializing...');
   const [error, setError] = useState<string | null>(null);
 
+  // Extract and clamp EXIF WB defaults from metadata
+  const defaultTemperature = useMemo(() => {
+    const kelvin = metadata?.whiteBalanceKelvin || 6500;
+    return Math.max(2000, Math.min(10000, kelvin));
+  }, [metadata?.whiteBalanceKelvin]);
+
+  const defaultTint = useMemo(() => {
+    const tint = metadata?.whiteBalanceTint || 0;
+    return Math.max(-1, Math.min(1, tint));
+  }, [metadata?.whiteBalanceTint]);
+
   const [exposure, setExposure] = useState(0);
   const [selectedLut, setSelectedLut] = useState<string | null>(null);
   const [lutEnabled, setLutEnabled] = useState(true);
   const [currentLutInfo, setCurrentLutInfo] = useState<CubeLUT | null>(null);
-  const [temperature, setTemperature] = useState(6500);
-  const [tint, setTint] = useState(0);
+  const [temperature, setTemperature] = useState(defaultTemperature);
+  const [tint, setTint] = useState(defaultTint);
 
   // LocalStorage key for this photo's editing session
   const storageKey = `auto-grader:edit:${photoName}`;
@@ -56,13 +70,14 @@ export function ImageEditor({
         setExposure(session.exposure);
         setSelectedLut(session.selectedLut);
         setLutEnabled(session.lutEnabled);
-        setTemperature(session.temperature ?? 6500);
-        setTint(session.tint ?? 0);
+        // Use session values if available, otherwise fall back to EXIF defaults
+        setTemperature(session.temperature ?? defaultTemperature);
+        setTint(session.tint ?? defaultTint);
       }
     } catch {
       // Ignore localStorage errors
     }
-  }, [storageKey]);
+  }, [storageKey, defaultTemperature, defaultTint]);
 
   // Save session to localStorage (debounced)
   useEffect(() => {
@@ -186,11 +201,11 @@ export function ImageEditor({
     []
   );
 
-  // Reset temperature to 6500K
+  // Reset temperature to EXIF default
   const resetTemperature = useCallback(() => {
-    setTemperature(6500);
-    graderRef.current?.setTemperature(6500);
-  }, []);
+    setTemperature(defaultTemperature);
+    graderRef.current?.setTemperature(defaultTemperature);
+  }, [defaultTemperature]);
 
   // Update tint in real-time
   const handleTintChange = useCallback(
@@ -202,11 +217,11 @@ export function ImageEditor({
     []
   );
 
-  // Reset tint to 0
+  // Reset tint to EXIF default
   const resetTint = useCallback(() => {
-    setTint(0);
-    graderRef.current?.setTint(0);
-  }, []);
+    setTint(defaultTint);
+    graderRef.current?.setTint(defaultTint);
+  }, [defaultTint]);
 
   // Toggle LUT
   const toggleLut = useCallback(() => {
@@ -234,20 +249,20 @@ export function ImageEditor({
     setExposure(0);
     setSelectedLut(null);
     setLutEnabled(true);
-    setTemperature(6500);
-    setTint(0);
+    setTemperature(defaultTemperature);
+    setTint(defaultTint);
     graderRef.current?.setExposure(0);
     graderRef.current?.clearLUT();
     graderRef.current?.setLUTEnabled(true);
-    graderRef.current?.setTemperature(6500);
-    graderRef.current?.setTint(0);
+    graderRef.current?.setTemperature(defaultTemperature);
+    graderRef.current?.setTint(defaultTint);
     setCurrentLutInfo(null);
     try {
       localStorage.removeItem(storageKey);
     } catch {
       // Ignore
     }
-  }, [storageKey]);
+  }, [storageKey, defaultTemperature, defaultTint]);
 
   return (
     <div className="space-y-6">

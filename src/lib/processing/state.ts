@@ -34,6 +34,9 @@ export interface PhotoMetadata {
   iso?: string;
   width?: number;
   height?: number;
+  whiteBalanceKelvin?: number;
+  whiteBalanceTint?: number;
+  whiteBalanceMode?: string;
 }
 
 export interface PhotoVariant {
