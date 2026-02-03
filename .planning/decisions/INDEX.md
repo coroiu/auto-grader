@@ -6,6 +6,7 @@ This directory contains individual decision records. Each file documents one sig
 
 | Date | Decision | Status | File |
 |------|----------|--------|------|
+| 2026-02-03 | White balance controls with Kelvin-based temperature and tint | Accepted | [2026-02-03-white-balance-implementation.md](2026-02-03-white-balance-implementation.md) |
 | 2026-01-29 | Filmic exposure tone mapping for realistic highlight/shadow behavior | Accepted | [2026-01-29-filmic-exposure-tone-mapping.md](2026-01-29-filmic-exposure-tone-mapping.md) |
 | 2026-01-28 | Browser-based image editing with WebGL | Accepted | [2026-01-28-browser-based-image-editing.md](2026-01-28-browser-based-image-editing.md) |
 | 2026-01-28 | Gallery performance optimization (in-memory store, virtual scroll) | Accepted | [2026-01-28-gallery-performance-optimization.md](2026-01-28-gallery-performance-optimization.md) |
