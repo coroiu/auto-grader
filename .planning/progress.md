@@ -103,6 +103,22 @@ None currently.
 
 ## Latest Changes
 
+- [2026-02-03] **Sony White Balance Metadata Extraction**
+  - Extract white balance from Sony ARW files (ColorTemperature, WhiteBalance mode, WBShiftAB_GM)
+  - Use camera's actual WB settings as editor defaults instead of hardcoded 6500K/0 tint
+  - Map Sony WB mode names (Daylight, Cloudy, Tungsten, etc.) to Kelvin values
+  - Reset buttons return to camera's EXIF values, not arbitrary defaults
+  - Rescan functionality re-extracts metadata for existing photos
+  - Backward compatible with photos lacking WB metadata (graceful 6500K/0 fallback)
+  - See `.planning/decisions/2026-02-03-sony-wb-metadata-extraction.md`
+  - Modified files:
+    - `src/lib/processing/metadata.ts` - WB extraction logic with mode mapping
+    - `src/lib/processing/state.ts` - Added WB fields to PhotoMetadata interface
+    - `src/lib/processing/watcher.ts` - Rescan metadata re-extraction
+    - `src/components/ImageEditor.tsx` - EXIF WB defaults for sliders and reset
+    - `src/app/photos/[name]/edit/EditPageClient.tsx` - Pass metadata to editor
+    - `src/app/photos/[name]/edit/page.tsx` - Pass metadata from API
+
 - [2026-02-03] **White Balance Implementation**
   - Added Kelvin-based temperature control (2000K-10000K) to WebGL editor
   - Added tint control (-1 to +1, green to magenta) for fine-tuning
